@@ -1,0 +1,21 @@
+{
+  // ---- General Settings ----
+  // Files
+  "files.autoSave": "afterDelay",
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // ---- Golang Settings ----
+  // https://github.com/golang/vscode-go/blob/master/docs/settings.md
+  // The gopls language server should be used.
+  // This provides most utitlites and settings itself, reducing need for configuration
+  "go.useLanguageServer": true,
+  "go.toolsManagement.autoUpdate": true,
+  "go.lintFlags": ["--fast"],
+  "go.lintOnSave": "package",
+  "go.lintTool": "golangci-lint",
+
+  // ---- Plugin Settings ----
+  "cSpell.words": ["twickets"]
+}
