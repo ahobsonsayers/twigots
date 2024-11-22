@@ -12,8 +12,8 @@ Powers (the similarly creatively named)
 To use this package you will need a Twickets API key. Twickets currently do not have a free API
 HOWEVER it is possible to **easily** obtain an API key to use with this library.
 
-To do this simply visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse)
-open you browser `Developer Tools` (by pressing F12), navigate to the `Network` tab, look for the
+To do this simply visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse),
+open you browser `Developer Tools` (by pressing `F12`), navigate to the `Network` tab, look for the
 `GET` request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query
 parameter from the request.
 
