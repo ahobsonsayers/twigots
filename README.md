@@ -1,4 +1,4 @@
-# Twigots
+# twigots
 
 A go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
 
