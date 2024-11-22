@@ -8,55 +8,57 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFilterTicketListingsName(t *testing.T) {
-	strangerThingsAsked := "Stranger Things"
-	strangerThingsGot := "Stranger Things: The First Shadow"
+func TestFilterEventName(t *testing.T) {
+	// These should match
+	strangerThings := "Stranger Things: The First Shadow"
+	strangerThingsFilter := "Stranger Things"
 
-	backToTheFutureAsked := "Back To The Future"
-	backToTheFutureGot := "Back To The Future: The Musical"
+	backToTheFuture := "Back To The Future: The Musical"
+	backToTheFutureFilter := "Back To The Future"
 
-	harryPotterAsked := "Harry Potter and the Cursed Child"
-	harryPotterGot := "Harry Potter & The Cursed Child Parts 1 & 2"
+	harryPotter := "Harry Potter & The Cursed Child Parts 1 & 2"
+	harryPotterFilter := "Harry Potter and the Cursed Child"
 
-	wizardOfOzAsked := "The Who"
-	wizardOfOzGot := "The The" // This shouldn't match
+	// These shouldn't match
+	theThe := "The The"
+	theWhoFilter := "The Who"
 
-	gotTickets := twigots.TicketListings{
-		{Event: twigots.Event{Name: strangerThingsGot}},
-		{Event: twigots.Event{Name: backToTheFutureGot}},
-		{Event: twigots.Event{Name: harryPotterGot}},
-		{Event: twigots.Event{Name: wizardOfOzGot}},
+	listings := twigots.TicketListings{
+		{Event: twigots.Event{Name: strangerThings}},
+		{Event: twigots.Event{Name: backToTheFuture}},
+		{Event: twigots.Event{Name: harryPotter}},
+		{Event: twigots.Event{Name: theThe}},
 	}
 
 	// Stranger Things
-	filteredListings := gotTickets.Filter(twigots.Filter{
-		Event: strangerThingsAsked,
+	filteredListings := listings.Filter(twigots.Filter{
+		Event: strangerThingsFilter,
 	})
 	require.Len(t, filteredListings, 1)
-	require.Equal(t, strangerThingsGot, filteredListings[0].Event.Name)
+	require.Equal(t, strangerThings, filteredListings[0].Event.Name)
 
 	// Back to the Future
-	filteredListings = gotTickets.Filter(twigots.Filter{
-		Event: backToTheFutureAsked,
+	filteredListings = listings.Filter(twigots.Filter{
+		Event: backToTheFutureFilter,
 	})
 	require.Len(t, filteredListings, 1)
-	require.Equal(t, backToTheFutureGot, filteredListings[0].Event.Name)
+	require.Equal(t, backToTheFuture, filteredListings[0].Event.Name)
 
 	// Harry Potter
-	filteredListings = gotTickets.Filter(twigots.Filter{
-		Event: harryPotterAsked,
+	filteredListings = listings.Filter(twigots.Filter{
+		Event: harryPotterFilter,
 	})
 	require.Len(t, filteredListings, 1)
-	require.Equal(t, harryPotterGot, filteredListings[0].Event.Name)
+	require.Equal(t, harryPotter, filteredListings[0].Event.Name)
 
-	// Wizard of Oz
-	filteredListings = gotTickets.Filter(twigots.Filter{
-		Event: wizardOfOzAsked,
+	// The Who
+	filteredListings = listings.Filter(twigots.Filter{
+		Event: theWhoFilter,
 	})
 	require.Empty(t, filteredListings)
 }
 
-func TestFilterTicketListingsCreatedAfter(t *testing.T) {
+func TestFilterCreatedAfter(t *testing.T) {
 	currentTime := time.Now()
 	listings := twigots.TicketListings{
 		{CreatedAt: twigots.UnixTime{currentTime.Add(-1 * time.Minute)}},

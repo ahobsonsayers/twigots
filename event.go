@@ -47,10 +47,10 @@ type Location struct {
 
 // Event contains the details of a tour.
 type Tour struct {
-	Id         string    `json:"tourId"`
-	Name       string    `json:"tourName"`
-	Slug       string    `json:"slug"`
-	FirstEvent *Date     `json:"minDate"` // 2024-06-06
-	LastEvent  *Date     `json:"maxDate"` // 2024-11-14
-	Countries  []Country `json:"countryCodes"`
+	Id         string   `json:"tourId"`
+	Name       string   `json:"tourName"`
+	Slug       string   `json:"slug"`
+	FirstEvent *Date    `json:"minDate"`      // 2024-06-06
+	LastEvent  *Date    `json:"maxDate"`      // 2024-11-14
+	Countries  []string `json:"countryCodes"` // TODO use enum - requires all countries to be added
 }

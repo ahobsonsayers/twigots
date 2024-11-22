@@ -2,6 +2,7 @@ package twigots_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,7 @@ import (
 
 // TODO: Use httptest client
 
-func TestGetLatestTickets(t *testing.T) {
+func TestGetLatestTicketListings(t *testing.T) {
 	t.Skip(t, "Does not work on CI atm. Fix this.")
 
 	projectDirectory := projectDirectory(t)
@@ -23,7 +24,7 @@ func TestGetLatestTickets(t *testing.T) {
 	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
 
 	twicketsClient := twigots.NewClient(nil)
-	tickets, err := twicketsClient.FetchTicketListings(
+	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			APIKey:  twicketsAPIKey,
@@ -36,7 +37,7 @@ func TestGetLatestTickets(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	require.Len(t, tickets, 10)
+	require.Len(t, listings, 10)
 }
 
 func projectDirectory(t *testing.T) string {
@@ -56,4 +57,19 @@ func projectDirectory(t *testing.T) string {
 	require.NotEqual(t, "failed find project directory", directory, "/")
 
 	return directory
+}
+
+func testTicketListings(t *testing.T) twigots.TicketListings {
+	projectDirectory := projectDirectory(t)
+	feedJsonFilePath := filepath.Join(projectDirectory, "testdata", "feed.json")
+
+	feedJsonFile, err := os.Open(feedJsonFilePath)
+	require.NoError(t, err)
+	feedJson, err := io.ReadAll(feedJsonFile)
+	require.NoError(t, err)
+
+	tickets, err := twigots.UnmarshalTwicketsFeedJson(feedJson)
+	require.NoError(t, err)
+
+	return tickets
 }
