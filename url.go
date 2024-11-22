@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	TwicketsURL = "https://www.twigots.live"
+	TwicketsURL = "https://www.twickets.live"
 
 	countryQueryKey = "countryCode"
 	regionQueryKey  = "regionCode"
