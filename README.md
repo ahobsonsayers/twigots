@@ -1,12 +1,25 @@
 # Twigots
 
-A (unofficial) go package to fetch ticket listings from the Twickets live feed.
+A (unofficial) go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
 
-Includes utilities to help filtered ticket listings to get the ones you want!
+Includes utilities to help filter ticket listings to find the ones you want!
+
+Powers (the similarity creatively named)
+[Twickets](https://github.com/ahobsonsayers/twitchets), an application to send notifications for
+newly listed desired tickets.
 
 ## Note: Getting a API key
 
-To use this package you will need a Twickets API key. Twickets currently do not have a free API HOWEVER
+To use this package you will need a Twickets API key. Twickets currently do not have a free API
+HOWEVER it is possible to **easily** obtain an API key to use with this library.
+
+To do this simply visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse)
+open you browser `Developer Tools` (by pressing F12), navigate to the `Network` tab, look for the
+`GET` request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query
+parameter from the request.
+
+This API is not provided here due to liability concerns, but seems to be fixed/unchanging, and
+is very easy to find.
 
 ## Example Usage
 
