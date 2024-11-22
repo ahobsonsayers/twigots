@@ -17,8 +17,8 @@ open you browser `Developer Tools` (by pressing `F12`), navigate to the `Network
 `GET` request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query
 parameter from the request.
 
-This API is not provided here due to liability concerns, but seems to be fixed/unchanging, and
-is very easy to find.
+This API key is not provided here due to liability concerns, but the key seems to be fixed/unchanging and
+is very easy to get using the instructions above.
 
 ## Example Usage
 
