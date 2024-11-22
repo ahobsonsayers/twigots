@@ -1,6 +1,6 @@
 # Twigots
 
-A (unofficial) go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
+An (unofficial) go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
 
 Includes utilities to help filter ticket listings to find the ones you want!
 
