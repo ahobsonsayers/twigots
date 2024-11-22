@@ -7,7 +7,7 @@ Includes utilities to help filter the ticket listings and find the ones you want
 Powers (the similarly creatively named)
 [twitchets](https://github.com/ahobsonsayers/twitchets), an application to watch for new listings of tickets you want, and send notifications so you can snap them up!
 
-## Note: Getting a API key
+## Getting an API key
 
 To use this package you will need a Twickets API key. Twickets currently do not have a free API
 HOWEVER it is possible to **easily** obtain an API key to use with this library.
