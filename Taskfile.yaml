@@ -1,0 +1,17 @@
+# Docs: https://taskfile.dev/#/usage
+version: "3"
+
+tasks:
+  lint:
+    cmds:
+      - golangci-lint run
+
+  format:
+    cmds:
+      - go fmt ./...
+
+  test:
+    cmds:
+      - |
+        go clean -testcache
+        go test ./...
