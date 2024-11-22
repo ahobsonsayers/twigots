@@ -1,12 +1,11 @@
 # Twigots
 
-An (unofficial) go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
+A go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
 
-Includes utilities to help filter ticket listings to find the ones you want!
+Includes utilities to help filter the ticket listings and find the ones you want!
 
-Powers (the similarity creatively named)
-[Twickets](https://github.com/ahobsonsayers/twitchets), an application to send notifications for
-newly listed desired tickets.
+Powers (the similarly creatively named)
+[twitchets](https://github.com/ahobsonsayers/twitchets), an application to watch for new listings of tickets you want, and send notifications so you can snap them up!
 
 ## Note: Getting a API key
 
