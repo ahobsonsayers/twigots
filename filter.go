@@ -13,6 +13,7 @@ import (
 const defaultSimilarity = 85.0
 
 // A filter to use on ticket listing(s). A ticket listing can either match the filter or not.
+//
 // A ticket listing must satisfy all specified filter fields to match, making this an AND filter.
 type Filter struct {
 	// Name of event on ticket listing to match.

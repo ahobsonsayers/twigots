@@ -1,5 +1,10 @@
 # twigots
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/ahobsonsayers/twigots.svg)](https://pkg.go.dev/github.com/ahobsonsayers/twigots)
+[![Go Report
+Card](https://goreportcard.com/badge/github.com/ahobsonsayers/twigots)](https://goreportcard.com/report/github.com/ahobsonsayers/twigots)
+[![License - MIT](https://img.shields.io/badge/License-MIT-9C27B0)](LICENSE)
+
 A go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
 
 Includes utilities to help filter the ticket listings and find the ones you want!
@@ -28,8 +33,6 @@ This API key is not provided here due to liability concerns, but the key seems t
 is very easy to get using the instructions above.
 
 ## Example Usage
-
-See the example in the `examples` directory, or see below.
 
 ```go
 package main

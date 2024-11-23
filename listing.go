@@ -44,54 +44,68 @@ type TicketListing struct {
 }
 
 // URL of the ticket listing
+//
+// Format is: https://www.twigots.live/app/block/<ticketId>,<quanitity>
 func (l TicketListing) URL() string {
-	// Link: https://www.twigots.live/app/block/<ticketId>,<quanitity>
 	return fmt.Sprintf("https://www.twigots.live/app/block/%s,%d", l.Id, l.NumTickets)
 }
 
 // TicketPriceExclFee is price of a single ticket, excluding fee.
-// Use `TotalPriceExclFee` to get the total price of all tickets, excluding fee.
+//
+// Use 'TotalPriceExclFee` to get the total price of all tickets, excluding fee.
+//
 // Use `TotalPriceInclFee` to get the total price of all tickets, including fee.
+//
 // Use `TicketPriceInclFee` to get the price of a single ticket, including fee.
 func (l TicketListing) TicketPriceExclFee() Price {
 	return l.TotalPriceExclFee.Divide(l.NumTickets).Add(l.TwicketsFeePerTicket())
 }
 
 // TotalPriceExclFee is the total price of all tickets, including fee.
+//
 // Use `TotalPriceExclFee` to get the total price of all tickets, excluding fee.
+//
 // Use `TicketPriceExclFee` to get the price of a single ticket, excluding fee.
+//
 // Use `TicketPriceInclFee` to get the price of a single ticket, including fee.
 func (l TicketListing) TotalPriceInclFee() Price {
 	return l.TotalPriceExclFee.Add(l.TwicketsFee)
 }
 
 // TicketPriceExclFee is price of a single ticket, including fee.
+//
 // Use `TotalPriceExclFee` to get the total price of all tickets, excluding fee.
+//
 // Use `TotalPriceInclFee` to get the total price of all tickets, including fee.
+//
 // Use `TicketPriceExclFee` to get the price of a single ticket, excluding fee.
 func (l TicketListing) TicketPriceInclFee() Price {
 	return l.TotalPriceInclFee().Divide(l.NumTickets)
 }
 
 // TwicketsFeePerTicket is the twickets fee per ticket.
+//
 // Use `TwicketsFee` to get the total fee for all tickets.
 func (l TicketListing) TwicketsFeePerTicket() Price {
 	return l.TwicketsFee.Divide(l.NumTickets)
 }
 
 // OriginalTotalPrice is the original price of a single ticket, including any fee.
+//
 // Use `OriginalTotalPrice` to get the original total price of all tickets, including any fee.
 func (l TicketListing) OriginalTicketPrice() Price {
 	return l.OriginalTotalPrice.Divide(l.NumTickets)
 }
 
 // Discount is the discount on the original price of a single ticket, including any fee.
+//
 // Discount is returned as a value between 0 and 1 (with 1 representing 100% off).
 func (l TicketListing) Discount() float64 {
 	return (1 - l.TotalPriceInclFee().Number()/l.OriginalTotalPrice.Number())
 }
 
 // DiscountString is the discount on the original price of a single ticket, including any fee
+//
 // as a percentage string between 0-100 with a % suffix
 func (l TicketListing) DiscountString() string {
 	discountString := strconv.FormatFloat(l.Discount()*100, 'f', 2, 64)

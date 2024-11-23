@@ -17,8 +17,10 @@ type Client struct {
 var DefaultClient = NewClient(nil)
 
 // FetchTicketListingsInput defines parameters when getting ticket listings.
+//
 // Ticket listings can either be fetched by maximum number or by time period.
 // The default is to get a maximum number of ticket listings.
+//
 // If both a maximum number and a time period are set, whichever condition
 // is met first will stop the fetching of ticket listings.
 type FetchTicketListingsInput struct {
