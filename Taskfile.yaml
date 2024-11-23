@@ -16,8 +16,3 @@ tasks:
       - |
         go clean -testcache
         go test ./...
-
-  gen:doc:
-    cmds:
-      - scripts/doc.sh
-      - go fmt doc.go
