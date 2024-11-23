@@ -39,47 +39,55 @@ import (
 func main() {
 	apiKey := "my_api_key"
 
+	// Fetch ticket listings
 	client := twigots.NewClient(nil) // Or use a custom http client
-	tickets, err := client.FetchTicketListings(
+	listings, err := client.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			// Required
 			APIKey:  apiKey,
 			Country: twigots.CountryUnitedKingdom, // Only UK is supported at the moment
 			// Optional. See all options in godoc
-			Regions:              []twigots.Region{twigots.RegionLondon},
-			CreatedBefore:        time.Now(),
-			CreatedAfter:         time.Now().Add(time.Duration(-5 * time.Minute)), // 5 mins ago
-			MaxNumTicketListings: 100,
+			CreatedBefore: time.Now(),
+			CreatedAfter:  time.Now().Add(time.Duration(-5 * time.Minute)), // 5 mins ago
+			MaxNumber:     100,
 		},
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	filter := twigots.Filter{
-		// Required
-		Event: "Coldplay",
-		// Optional
-		EventSimilarity: 100, // Avoid false positives
-		Regions: []twigots.Region{
-			twigots.RegionLondon,
-			twigots.RegionSouth,
-		},
-		NumTickets: 2,
-		Discount:   10, // Minimum 10% discount (INCLUDING booking fee)
+	log.Printf("Fetched %d ticket listings", len(listings))
 
+	// Filter ticket listing for the ones we want
+	filteredListings, err := listings.Filter(
+		// Filter for listings of Hamilton tickets
+		twigots.Filter{Event: "Hamilton"},
+		// Also filter for listings of Coldplay tickets.
+		// Lets impose extra restrictions on these.
+		twigots.Filter{
+			Event:           "Coldplay", // Required
+			EventSimilarity: 1,          // Avoid false positives
+			Regions: []twigots.Region{
+				twigots.RegionLondon,
+				twigots.RegionSouth,
+			},
+			NumTickets:  2,   // Exactly 2 tickets in the listing
+			MinDiscount: 0.1, // Discount of > 10%
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	filteredTickets := tickets.Filter(filter)
-	for _, ticket := range filteredTickets {
+	for _, listing := range filteredListings {
 		slog.Info(
-			"Found tickets for monitored event",
-			"eventName", ticket.Event.Name,
-			"numTickets", ticket.TicketQuantity,
-			"ticketPrice", ticket.TotalPriceInclFee().String(),
-			"originalTicketPrice", ticket.OriginalTicketPrice().String(),
-			"link", ticket.Link(),
+			"Ticket listing found matching a filter",
+			"Event", listing.Event.Name,
+			"NumTickets", listing.NumTickets,
+			"Price", listing.TotalPriceInclFee().String(),
+			"OriginalPrice", listing.OriginalTicketPrice().String(),
+			"URL", listing.URL(),
 		)
 	}
 }
