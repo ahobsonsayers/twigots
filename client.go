@@ -126,7 +126,7 @@ func (c *Client) FetchTicketListings(ctx context.Context, input FetchTicketListi
 
 	// Only return ticket listings requested
 	ticketListings = sliceToMaxNumTicketListings(ticketListings, input.MaxNumber)
-	ticketListings = ticketListings.Filter(Filter{CreatedAfter: input.CreatedAfter})
+	ticketListings = filterToCreatedAfter(ticketListings, input.CreatedAfter)
 
 	return ticketListings, nil
 }
@@ -179,9 +179,19 @@ func NewClient(httpClient *http.Client) *Client {
 	return &Client{client: httpClient}
 }
 
-func sliceToMaxNumTicketListings(ticketListings TicketListings, maxNumTicketListings int) TicketListings {
-	if len(ticketListings) > maxNumTicketListings {
-		ticketListings = ticketListings[:maxNumTicketListings]
+func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings int) TicketListings {
+	if len(listings) > maxNumTicketListings {
+		listings = listings[:maxNumTicketListings]
 	}
-	return ticketListings
+	return listings
+}
+
+func filterToCreatedAfter(listings TicketListings, createdAfter time.Time) TicketListings {
+	filteredListings := make(TicketListings, 0, len(listings))
+	for _, listing := range listings {
+		if matchesCreatedAfter(listing, createdAfter) {
+			filteredListings = append(filteredListings, listing)
+		}
+	}
+	return filteredListings
 }
