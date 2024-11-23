@@ -85,7 +85,7 @@ var (
 
 type Currency enum.Member[string]
 
-// Symbol is the character that represetns the curreny
+// Symbol is the character that represents the currency
 // e.g. $, £, €.
 func (c Currency) Symbol() string {
 	switch c {

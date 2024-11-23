@@ -17,13 +17,15 @@ const (
 	regionQueryKey  = "regionCode"
 )
 
-var twicketsUrl *url.URL = func() *url.URL {
-	twicketsUrl, err := url.Parse(TwicketsURL)
+var twicketsUrl *url.URL
+
+func init() {
+	var err error
+	twicketsUrl, err = url.Parse(TwicketsURL)
 	if err != nil {
 		log.Fatal("failed to parse twickets url")
 	}
-	return twicketsUrl
-}()
+}
 
 // ListingURL gets the url of a listing given its id and the
 // number of tickets in the listing.
