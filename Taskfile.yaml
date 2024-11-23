@@ -9,7 +9,7 @@ tasks:
   format:
     cmds:
       - go fmt ./...
-      - go run github.com/segmentio/golines@latest ./...
+      - go run github.com/segmentio/golines@latest .
 
   test:
     cmds:
@@ -19,10 +19,5 @@ tasks:
 
   gen:doc:
     cmds:
-      - |
-        {
-          echo "/*"
-          cat ./README.md
-          echo "*/"
-          echo "package twigots"
-        } > doc.go
+      - scripts/doc.sh
+      - go fmt doc.go

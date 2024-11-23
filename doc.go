@@ -6,7 +6,12 @@ A go package to fetch ticket listings from the [Twickets](https://www.twickets.l
 Includes utilities to help filter the ticket listings and find the ones you want!
 
 Powers (the similarly creatively named)
-[twitchets](https://github.com/ahobsonsayers/twitchets), an application to watch for new listings of tickets you want, and send notifications so you can snap them up!
+[twitchets](https://github.com/ahobsonsayers/twitchets), an application to watch for new
+listings of tickets you want and send notifications so you can snap them up!
+
+## Installation
+
+	go get -u github.com/ahobsonsayers/twigots
 
 ## Getting an API key
 
@@ -25,19 +30,16 @@ is very easy to get using the instructions above.
 
 See the example in the `examples` directory, or see below.
 
-```go
-package main
+	package main
 
-import (
+	import (
+		"context"
+		"log"
+		"log/slog"
+		"time"
 
-	"context"
-	"log"
-	"log/slog"
-	"time"
-
-	"github.com/ahobsonsayers/twigots"
-
-)
+		"github.com/ahobsonsayers/twigots"
+	)
 
 	func main() {
 		apiKey := "my_api_key"
@@ -94,8 +96,6 @@ import (
 			)
 		}
 	}
-
-```
 
 ## Why the name twigots?
 
