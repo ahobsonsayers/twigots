@@ -91,7 +91,10 @@ func (f FetchTicketListingsInput) validate() error {
 }
 
 // FetchTicketListings gets ticket listings using the specified input.
-func (c *Client) FetchTicketListings(ctx context.Context, input FetchTicketListingsInput) (TicketListings, error) {
+func (c *Client) FetchTicketListings(
+	ctx context.Context,
+	input FetchTicketListingsInput,
+) (TicketListings, error) {
 	input.applyDefaults()
 	err := input.validate()
 	if err != nil {
@@ -132,7 +135,10 @@ func (c *Client) FetchTicketListings(ctx context.Context, input FetchTicketListi
 }
 
 // FetchTicketListings gets ticket listings using the specified feel url.
-func (c *Client) FetchTicketListingsByFeedUrl(ctx context.Context, feedUrl string) (TicketListings, error) {
+func (c *Client) FetchTicketListingsByFeedUrl(
+	ctx context.Context,
+	feedUrl string,
+) (TicketListings, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, feedUrl, http.NoBody)
 	if err != nil {
 		return nil, err
