@@ -17,5 +17,13 @@
   "go.lintTool": "golangci-lint",
 
   // ---- Plugin Settings ----
-  "cSpell.words": ["twickets"]
+  "cSpell.words": ["twickets"],
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": "\\.go$",
+        "cmd": "golines -w ${file}"
+      }
+    ]
+  }
 }
