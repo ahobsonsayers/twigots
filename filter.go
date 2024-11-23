@@ -35,7 +35,7 @@ type Filter struct {
 	// Defaults to unset.
 	NumTickets int
 
-	// Minimum discount of tickets in a listing to match.
+	// Minimum discount (including fee) of tickets in a listing to match.
 	// Specified as a float, between 0 and 1 (with 1 representing 100% off).
 	// Leave this unset or 0 to match any discount (including no discount).
 	// Defaults to unset.
@@ -52,9 +52,7 @@ type Filter struct {
 	CreatedAfter time.Time
 }
 
-// Validate will validate the filter struct. Intended for internal
-// use but can be used to validate a filter manually.
-func (f Filter) Validate() error {
+func (f Filter) validate() error {
 	if f.Event == "" {
 		return errors.New("event name must be set")
 	}
@@ -62,7 +60,7 @@ func (f Filter) Validate() error {
 	if f.EventSimilarity < 0 {
 		return errors.New("similarity cannot be negative")
 	} else if f.EventSimilarity > 1 {
-		return errors.New("similarity cannot above 100%")
+		return errors.New("similarity cannot be > 1")
 	}
 
 	for _, region := range f.Regions {
@@ -78,18 +76,38 @@ func (f Filter) Validate() error {
 	if f.MinDiscount < 0 {
 		return errors.New("discount cannot be negative")
 	}
+	if f.MinDiscount > 1 {
+		return errors.New("discount cannot be > 1")
+	}
 
 	return nil
 }
 
-// ListingMatches checks if a ticket listing matches the filter
-func (f Filter) TicketListingMatches(listing TicketListing) bool {
-	return matchesEventName(listing, f.Event, f.EventSimilarity) &&
-		matchesRegions(listing, f.Regions) &&
-		matchesNumTickets(listing, f.NumTickets) &&
-		matchesDiscount(listing, f.MinDiscount) &&
-		matchesCreatedBefore(listing, f.CreatedBefore) &&
-		matchesCreatedAfter(listing, f.CreatedAfter)
+// matchesAnyFilter returns whether a ticket listing matches any of the filters provided.
+// filters are assumed to have been validated first.
+func matchesAnyFilter(listing TicketListing, filters ...Filter) bool {
+	if len(filters) == 0 {
+		return true
+	}
+
+	for _, filter := range filters {
+		if matchesFilter(listing, filter) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// matchesAnyFilter returns whether a ticket listing matches the filters provided.
+// filter is assumed to have been validated first.
+func matchesFilter(listing TicketListing, filter Filter) bool {
+	return matchesEventName(listing, filter.Event, filter.EventSimilarity) &&
+		matchesRegions(listing, filter.Regions) &&
+		matchesNumTickets(listing, filter.NumTickets) &&
+		matchesDiscount(listing, filter.MinDiscount) &&
+		matchesCreatedBefore(listing, filter.CreatedBefore) &&
+		matchesCreatedAfter(listing, filter.CreatedAfter)
 }
 
 // matchesEventName returns whether a ticket listing matches a desired event name
