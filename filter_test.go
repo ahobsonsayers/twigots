@@ -31,44 +31,63 @@ func TestFilterEventName(t *testing.T) {
 	}
 
 	// Stranger Things
-	filteredListings := listings.Filter(twigots.Filter{
+	filteredListings, err := listings.Filter(twigots.Filter{
 		Event: strangerThingsFilter,
 	})
+	require.NoError(t, err)
 	require.Len(t, filteredListings, 1)
 	require.Equal(t, strangerThings, filteredListings[0].Event.Name)
 
 	// Back to the Future
-	filteredListings = listings.Filter(twigots.Filter{
+	filteredListings, err = listings.Filter(twigots.Filter{
 		Event: backToTheFutureFilter,
 	})
+	require.NoError(t, err)
 	require.Len(t, filteredListings, 1)
 	require.Equal(t, backToTheFuture, filteredListings[0].Event.Name)
 
 	// Harry Potter
-	filteredListings = listings.Filter(twigots.Filter{
+	filteredListings, err = listings.Filter(twigots.Filter{
 		Event: harryPotterFilter,
 	})
+	require.NoError(t, err)
 	require.Len(t, filteredListings, 1)
 	require.Equal(t, harryPotter, filteredListings[0].Event.Name)
 
 	// The Who
-	filteredListings = listings.Filter(twigots.Filter{
+	filteredListings, err = listings.Filter(twigots.Filter{
 		Event: theWhoFilter,
 	})
+	require.NoError(t, err)
 	require.Empty(t, filteredListings)
 }
 
 func TestFilterCreatedAfter(t *testing.T) {
+	event := twigots.Event{Name: "test"}
 	currentTime := time.Now()
 	listings := twigots.TicketListings{
-		{CreatedAt: twigots.UnixTime{currentTime.Add(-1 * time.Minute)}},
-		{CreatedAt: twigots.UnixTime{currentTime.Add(-2 * time.Minute)}},
-		{CreatedAt: twigots.UnixTime{currentTime.Add(-4 * time.Minute)}},
-		{CreatedAt: twigots.UnixTime{currentTime.Add(-5 * time.Minute)}},
+		{
+			Event:     event,
+			CreatedAt: twigots.UnixTime{currentTime.Add(-1 * time.Minute)},
+		},
+		{
+			Event:     event,
+			CreatedAt: twigots.UnixTime{currentTime.Add(-2 * time.Minute)},
+		},
+		{
+			Event:     event,
+			CreatedAt: twigots.UnixTime{currentTime.Add(-4 * time.Minute)},
+		},
+		{
+			Event:     event,
+			CreatedAt: twigots.UnixTime{currentTime.Add(-5 * time.Minute)},
+		},
 	}
 
-	filteredListings := listings.Filter(twigots.Filter{
+	filteredListings, err := listings.Filter(twigots.Filter{
+		Event:        event.Name,
 		CreatedAfter: currentTime.Add(-3 * time.Minute),
 	})
+	require.NoError(t, err)
 	require.Equal(t, listings[0:2], filteredListings)
 }
