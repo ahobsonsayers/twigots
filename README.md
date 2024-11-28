@@ -22,7 +22,7 @@ go get -u github.com/ahobsonsayers/twigots
 ## Getting an API key
 
 To use this package you will need a Twickets API key. Twickets currently do not have a free API
-HOWEVER it is possible to **easily** obtain an API key to use with this library.
+HOWEVER it is possible to easily obtain an API key to use with this library.
 
 To do this simply visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse),
 open you browser `Developer Tools` (by pressing `F12`), navigate to the `Network` tab, look for the
