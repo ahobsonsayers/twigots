@@ -116,7 +116,7 @@ func (l TicketListing) DiscountString() string {
 func (l TicketListing) MatchesAnyFilter(filters ...Filter) (bool, error) {
 	// Validate filters
 	for _, filter := range filters {
-		err := filter.validate()
+		err := filter.Validate()
 		if err != nil {
 			return false, fmt.Errorf("invalid filter: %w", err)
 		}
@@ -146,7 +146,7 @@ func (l TicketListings) Filter(filters ...Filter) (TicketListings, error) {
 
 	// Validate filters
 	for _, filter := range filters {
-		err := filter.validate()
+		err := filter.Validate()
 		if err != nil {
 			return nil, fmt.Errorf("invalid filter: %w", err)
 		}

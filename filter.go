@@ -53,7 +53,9 @@ type Filter struct {
 	CreatedAfter time.Time
 }
 
-func (f Filter) validate() error {
+// Validate the filter.
+// This is used internally to check a filter, but can also be used externally.
+func (f Filter) Validate() error {
 	if f.Event == "" {
 		return errors.New("event name must be set")
 	}

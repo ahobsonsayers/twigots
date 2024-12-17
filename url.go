@@ -49,7 +49,9 @@ type FeedUrlInput struct {
 	BeforeTime  time.Time // Defaults to current time
 }
 
-func (f FeedUrlInput) validate() error {
+// Validate the input struct used to get the feed url.
+// This is used internally to check the input, but can also be used externally.
+func (f FeedUrlInput) Validate() error {
 	if f.APIKey == "" {
 		return errors.New("api key must be set")
 	}
@@ -66,7 +68,7 @@ func (f FeedUrlInput) validate() error {
 //
 // Format is: https://www.twigots.live/services/catalogue?q=countryCode=GB&count=100&api_key=<api_key>
 func FeedUrl(input FeedUrlInput) (string, error) {
-	err := input.validate()
+	err := input.Validate()
 	if err != nil {
 		return "", fmt.Errorf("invalid input parameters: %w", err)
 	}

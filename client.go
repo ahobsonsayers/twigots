@@ -73,7 +73,9 @@ func (f *FetchTicketListingsInput) applyDefaults() {
 	}
 }
 
-func (f FetchTicketListingsInput) validate() error {
+// Validate the input struct used to get ticket listings.
+// This is used internally to check the input, but can also be used externally.
+func (f FetchTicketListingsInput) Validate() error {
 	if f.APIKey == "" {
 		return errors.New("api key must be set")
 	}
@@ -98,7 +100,7 @@ func (c *Client) FetchTicketListings(
 	input FetchTicketListingsInput,
 ) (TicketListings, error) {
 	input.applyDefaults()
-	err := input.validate()
+	err := input.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
