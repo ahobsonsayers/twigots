@@ -22,7 +22,7 @@ go get -u github.com/ahobsonsayers/twigots
 ## Getting an API key
 
 To use this package you will need a Twickets API key. Twickets currently do not have a free API
-HOWEVER it is possible to **easily** obtain an API key to use with this library.
+HOWEVER it is possible to easily obtain an API key to use with this library.
 
 To do this simply visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse),
 open you browser `Developer Tools` (by pressing `F12`), navigate to the `Network` tab, look for the
@@ -106,3 +106,5 @@ func main() {
 ## Why the name twigots?
 
 Because its a stupid mash up of Tickets and Go... and also why not?
+
+[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fahobsonsayers%2Fabs-tract&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visitors+day+%2F+total&edge_flat=false)](https://hits.seeyoufarm.com)
