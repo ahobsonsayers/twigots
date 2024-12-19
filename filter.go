@@ -10,7 +10,7 @@ import (
 	"github.com/samber/lo"
 )
 
-const defaultSimilarity = 85.0
+const defaultSimilarity = 0.85
 
 // A filter to use on ticket listing(s). A ticket listing can either match the filter or not.
 //
@@ -115,9 +115,9 @@ func matchesEventName(listing TicketListing, eventName string, similarity float6
 		metrics.NewJaroWinkler(),
 	)
 	if similarity <= 0 {
-		return ticketSimilarity >= defaultSimilarity/100
+		return ticketSimilarity >= defaultSimilarity
 	}
-	return ticketSimilarity >= similarity/100
+	return ticketSimilarity >= similarity
 }
 
 // matchesRegions determines whether a ticket listing matches any desired regions.
