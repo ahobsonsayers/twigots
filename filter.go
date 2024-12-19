@@ -22,7 +22,8 @@ type Filter struct {
 
 	// Similarity of event name on ticket listing to the event name specified in the filter.
 	// Specified as a float, between 0 and 1 (with 1 representing an exact match).
-	// Defaults to 0.85 to account for variances in event names.
+	// Leave this unset or set to <=0 to use the default.
+	// Default is 0.85 which accounts for variances in event names.
 	// e.g. Taylor Swift and Taylor Swift: The Eras Tour should match.
 	EventSimilarity float64
 
@@ -32,7 +33,7 @@ type Filter struct {
 	Regions []Region
 
 	// Number of tickets in a listing to match.
-	// Leave this unset or <=0 to match any number of tickets.
+	// Leave this unset or set to <=0 to match any number of tickets.
 	// Defaults to unset.
 	NumTickets int
 
@@ -60,9 +61,7 @@ func (f Filter) Validate() error {
 		return errors.New("event name must be set")
 	}
 
-	if f.EventSimilarity < 0 {
-		return errors.New("similarity cannot be negative")
-	} else if f.EventSimilarity > 1 {
+	if f.EventSimilarity > 1 {
 		return errors.New("similarity cannot be > 1")
 	}
 
@@ -115,7 +114,7 @@ func matchesEventName(listing TicketListing, eventName string, similarity float6
 		ticketEventName, desiredEventName,
 		metrics.NewJaroWinkler(),
 	)
-	if similarity == 0 {
+	if similarity <= 0 {
 		return ticketSimilarity >= defaultSimilarity/100
 	}
 	return ticketSimilarity >= similarity/100
