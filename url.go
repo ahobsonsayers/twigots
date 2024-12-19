@@ -31,7 +31,7 @@ func init() {
 // number of tickets in the listing.
 //
 // Format is:
-// https://www.twigots.live/app/block/<ticketId>,<numTickets>
+// https://www.twickets.live/app/block/<ticketId>,<numTickets>
 func ListingURL(listingId string, numTickets int) string {
 	ticketUrl := cloneURL(twicketsUrl)
 	ticketUrl = ticketUrl.JoinPath("app", "block", fmt.Sprintf("%s,%d", listingId, numTickets))
@@ -66,7 +66,7 @@ func (f FeedUrlInput) Validate() error {
 
 // FeedUrl gets the url of a feed of ticket listings
 //
-// Format is: https://www.twigots.live/services/catalogue?q=countryCode=GB&count=100&api_key=<api_key>
+// Format is: https://www.twickets.live/services/catalogue?q=countryCode=GB&count=100&api_key=<api_key>
 func FeedUrl(input FeedUrlInput) (string, error) {
 	err := input.Validate()
 	if err != nil {

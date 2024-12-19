@@ -45,9 +45,9 @@ type TicketListing struct {
 
 // URL of the ticket listing
 //
-// Format is: https://www.twigots.live/app/block/<ticketId>,<quanitity>
+// Format is: https://www.twickets.live/app/block/<ticketId>,<quanitity>
 func (l TicketListing) URL() string {
-	return fmt.Sprintf("https://www.twigots.live/app/block/%s,%d", l.Id, l.NumTickets)
+	return fmt.Sprintf("https://www.twickets.live/app/block/%s,%d", l.Id, l.NumTickets)
 }
 
 // TicketPriceExclFee is price of a single ticket, excluding fee.
