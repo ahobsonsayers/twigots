@@ -32,13 +32,13 @@ type Filter struct {
 	Regions []Region
 
 	// Number of tickets in a listing to match.
-	// Leave this unset or 0 to match any number of tickets.
+	// Leave this unset or <=0 to match any number of tickets.
 	// Defaults to unset.
 	NumTickets int
 
 	// Minimum discount (including fee) of tickets in a listing to match.
 	// Specified as a float, between 0 and 1 (with 1 representing 100% off).
-	// Leave this unset or 0 to match any discount (including no discount).
+	// Leave this unset or set to <=0 to match any discount (including no discount).
 	// Defaults to unset.
 	MinDiscount float64
 
@@ -72,13 +72,6 @@ func (f Filter) Validate() error {
 		}
 	}
 
-	if f.NumTickets < 0 {
-		return errors.New("number of tickets cannot be negative")
-	}
-
-	if f.MinDiscount < 0 {
-		return errors.New("discount cannot be negative")
-	}
 	if f.MinDiscount > 1 {
 		return errors.New("discount cannot be > 1")
 	}
