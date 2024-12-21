@@ -19,18 +19,15 @@ listings of tickets you want and send notifications so you can snap them up!
 go get -u github.com/ahobsonsayers/twigots
 ```
 
-## Getting an API key
+## Getting an API Key
 
-To use this package you will need a Twickets API key. Twickets currently do not have a free API
-HOWEVER it is possible to easily obtain an API key to use with this library.
+To use this tool, you will need a Twickets API key. Although Twickets doesn't provide a free API, you can easily obtain a key by following these steps:
 
-To do this simply visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse),
-open you browser `Developer Tools` (by pressing `F12`), navigate to the `Network` tab, look for the
-`GET` request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query
-parameter from the request.
+1.  Visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse)
+2.  Open your browser's Developer Tools (F12) and navigate to the Network tab
+3.  Look for the GET request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query parameter
 
-This API key is not provided here due to liability concerns, but the key seems to be fixed/unchanging and
-is very easy to get using the instructions above.
+This API key is not provided here due to liability concerns, but it appears to be a fixed, unchanging value.
 
 ## Example Usage
 
