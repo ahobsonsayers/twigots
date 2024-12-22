@@ -25,7 +25,7 @@ To use this tool, you will need a Twickets API key. Although Twickets doesn't pr
 
 1.  Visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse)
 2.  Open your browser's Developer Tools (F12) and navigate to the Network tab
-3.  Look for the GET request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query parameter
+3.  Look for the GET request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query parameter. You might need to refresh the page first if nothing appears in this tab.
 
 This API key is not provided here due to liability concerns, but it appears to be a fixed, unchanging value.
 
