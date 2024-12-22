@@ -10,8 +10,7 @@ A go package to fetch ticket listings from the [Twickets](https://www.twickets.l
 Includes utilities to help filter the ticket listings and find the ones you want!
 
 Powers (the similarly creatively named)
-[twitchets](https://github.com/ahobsonsayers/twitchets), an application to watch for new
-listings of tickets you want and send notifications so you can snap them up!
+[twitchets](https://github.com/ahobsonsayers/twitchets), a tool to watch for event ticket listings on Twickets and notify you so you can snap them up! 🫰
 
 ## Installation
 
