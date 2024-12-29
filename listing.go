@@ -100,15 +100,24 @@ func (l TicketListing) OriginalTicketPrice() Price {
 // Discount is the discount on the original price of a single ticket, including any fee.
 //
 // Discount is returned as a value between 0 and 1 (with 1 representing 100% off).
+// If ticket is being sold at its original price, the addition of the twickets fee will
+// cause discount to be < 0 i.e. the total ticket price will have gone up.
 func (l TicketListing) Discount() float64 {
 	return (1 - l.TotalPriceInclFee().Number()/l.OriginalTotalPrice.Number())
 }
 
 // DiscountString is the discount on the original price of a single ticket, including any fee
+// as a percentage string between 0-100 with a % suffix.
 //
-// as a percentage string between 0-100 with a % suffix
+// If ticket is being sold at its original price, the addition of the twickets fee will
+// cause discount to be < 0% i.e. the total ticket price will have gone up. If this is the
+// / case "none" will be returned instead of a negative percentage
 func (l TicketListing) DiscountString() string {
-	discountString := strconv.FormatFloat(l.Discount()*100, 'f', 2, 64)
+	discount := l.Discount()
+	if discount < 0 {
+		return "none"
+	}
+	discountString := strconv.FormatFloat(discount*100, 'f', 2, 64)
 	return discountString + "%"
 }
 
