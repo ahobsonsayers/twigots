@@ -15,7 +15,7 @@ import (
 // TODO: Use httptest client
 
 func TestGetLatestTicketListings(t *testing.T) {
-	t.Skip(t, "Does not work on CI atm. Fix this.")
+	// t.Skip(t, "Does not work on CI atm. Fix this.")
 
 	projectDirectory := projectDirectory(t)
 	_ = godotenv.Load(filepath.Join(projectDirectory, ".env"))
@@ -23,7 +23,7 @@ func TestGetLatestTicketListings(t *testing.T) {
 	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
 	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
 
-	twicketsClient := twigots.NewClient(nil)
+	twicketsClient := twigots.NewClient()
 	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
