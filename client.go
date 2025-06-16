@@ -2,19 +2,23 @@ package twigots
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/imroc/req/v3"
+	"github.com/k3a/html2text"
 )
 
 type Client struct {
-	client *http.Client
+	client *req.Client
 }
 
-var DefaultClient = NewClient(nil)
+func (c *Client) Client() *http.Client {
+	return c.client.GetClient()
+}
 
 // FetchTicketListingsInput defines parameters when getting ticket listings.
 //
@@ -126,6 +130,9 @@ func (c *Client) FetchTicketListings(
 		if err != nil {
 			return nil, err
 		}
+		if len(feedTicketListings) == 0 {
+			return nil, errors.New("no tickets returned")
+		}
 
 		ticketListings = append(ticketListings, feedTicketListings...)
 		earliestTicketTime = feedTicketListings[len(feedTicketListings)-1].CreatedAt.Time
@@ -143,25 +150,17 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 	ctx context.Context,
 	feedUrl string,
 ) (TicketListings, error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, feedUrl, http.NoBody)
+	response, err := c.client.R().SetContext(ctx).Get(feedUrl)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 
-	request.Header.Set("User-Agent", "") // Twickets blocks some user agents
-
-	response, err := c.client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode >= 300 {
-		err := fmt.Errorf("error response %s", response.Status)
-		if response.StatusCode == http.StatusForbidden {
-			err = fmt.Errorf("%s: possibly due to tls misconfiguration", err)
-		}
-		return nil, err
+	if !response.IsSuccessState() {
+		errorBody := html2text.HTML2Text(response.String())
+		return nil, fmt.Errorf(
+			"failed to fetch tickets: %s\n\nResponse:\n%s",
+			response.GetStatus(), errorBody,
+		)
 	}
 
 	bodyBytes, err := io.ReadAll(response.Body)
@@ -173,20 +172,9 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 }
 
 // NewClient creates a new Twickets client
-func NewClient(httpClient *http.Client) *Client {
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-
-	if httpClient.Transport == nil {
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			},
-		}
-	}
-
-	return &Client{client: httpClient}
+func NewClient() *Client {
+	client := req.C().ImpersonateChrome()
+	return &Client{client: client}
 }
 
 func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings int) TicketListings {
