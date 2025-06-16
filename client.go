@@ -145,6 +145,22 @@ func (c *Client) FetchTicketListings(
 	return ticketListings, nil
 }
 
+func flaresolverrRequestMiddleware(client *req.Client, req *req.Request) error {
+	if req.Method != http.MethodGet {
+		return nil
+	}
+
+	
+
+	// 	'{
+	//   "cmd": "request.get",
+	//   "url": "http://www.google.com/",
+	//   "maxTimeout": 60000
+	// }'
+
+	return nil // return nil if it is success
+}
+
 // FetchTicketListings gets ticket listings using the specified feel url.
 func (c *Client) FetchTicketListingsByFeedUrl(
 	ctx context.Context,
