@@ -174,16 +174,6 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 // NewClient creates a new Twickets client
 func NewClient() *Client {
 	client := req.C().ImpersonateChrome()
-
-	// client.Transport = req.NewTransport()
-	// if httpClient.Transport == nil {
-	// 	httpClient.Transport = &http.Transport{
-	// 		TLSClientConfig: &tls.Config{
-	// 			MinVersion: tls.VersionTLS12,
-	// 		},
-	// 	}
-	// }
-
 	return &Client{client: client}
 }
 
