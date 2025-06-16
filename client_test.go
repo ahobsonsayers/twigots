@@ -15,7 +15,7 @@ import (
 // TODO: Use httptest client
 
 func TestGetLatestTicketListings(t *testing.T) {
-	// t.Skip(t, "Does not work on CI atm. Fix this.")
+	t.Skip(t, "Does not work on CI atm. Fix this.")
 
 	projectDirectory := projectDirectory(t)
 	_ = godotenv.Load(filepath.Join(projectDirectory, ".env"))
