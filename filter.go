@@ -107,8 +107,8 @@ func matchesFilter(listing TicketListing, filter Filter) bool {
 
 // matchesEventName returns whether a ticket listing matches a desired event name
 func matchesEventName(listing TicketListing, eventName string, similarity float64) bool {
-	ticketEventName := normaliseEventName(listing.Event.Name)
-	desiredEventName := normaliseEventName(eventName)
+	ticketEventName := NormaliseString(listing.Event.Name)
+	desiredEventName := NormaliseString(eventName)
 
 	ticketSimilarity := strutil.Similarity(
 		ticketEventName, desiredEventName,

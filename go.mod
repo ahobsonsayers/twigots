@@ -8,6 +8,7 @@ require (
 	github.com/adrg/strutil v0.3.1
 	github.com/imroc/req/v3 v3.52.2
 	github.com/joho/godotenv v1.5.1
+	github.com/k3a/html2text v1.2.1
 	github.com/orsinium-labs/enum v1.4.0
 	github.com/samber/lo v1.47.0
 	github.com/stretchr/testify v1.9.0
@@ -22,7 +23,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/icholy/digest v1.1.0 // indirect
-	github.com/k3a/html2text v1.2.1 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect

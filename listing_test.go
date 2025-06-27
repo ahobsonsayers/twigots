@@ -3,6 +3,7 @@ package twigots_test
 import (
 	"testing"
 
+	"github.com/ahobsonsayers/twigots"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,4 +62,41 @@ func TestTicketListingDiscountString(t *testing.T) {
 	tickets := testTicketListings(t)
 	discountString := tickets[0].DiscountString()
 	require.Equal(t, "14.41%", discountString)
+}
+
+func TestNormaliseString(t *testing.T) {
+	// Test leading and trailing spaces get removed
+	normalisedEventName := twigots.NormaliseString(" Spaced  ")
+	expectedNormalisedEventName := "spaced"
+	require.Equal(t, expectedNormalisedEventName, normalisedEventName)
+
+	// Test accents get replaced with with a-z alternative
+	normalisedEventName = twigots.NormaliseString("Mötley Crüe")
+	expectedNormalisedEventName = "motley crue"
+	require.Equal(t, expectedNormalisedEventName, normalisedEventName)
+
+	// Test the prefix gets removed, and ',' get removed
+	normalisedEventName = twigots.NormaliseString("The Lion, the Witch and the Wardrobe")
+	expectedNormalisedEventName = "lion the witch and the wardrobe"
+	require.Equal(t, expectedNormalisedEventName, normalisedEventName)
+
+	// Test a prefix of the without a space doesn't get removed
+	normalisedEventName = twigots.NormaliseString("there WE gO")
+	expectedNormalisedEventName = "there we go"
+	require.Equal(t, expectedNormalisedEventName, normalisedEventName)
+
+	// Test removal of ':' and '.'
+	normalisedEventName = twigots.NormaliseString("Thor: The Dark World.")
+	expectedNormalisedEventName = "thor the dark world"
+	require.Equal(t, expectedNormalisedEventName, normalisedEventName)
+
+	// Test replacements of '&' with 'and' regardless of spaces
+	normalisedEventName = twigots.NormaliseString("This & That& This &That&This")
+	expectedNormalisedEventName = "this and that and this and that and this"
+	require.Equal(t, expectedNormalisedEventName, normalisedEventName)
+
+	// Test removal of 2+ spaces
+	normalisedEventName = twigots.NormaliseString("------gimme------lines------")
+	expectedNormalisedEventName = "gimme lines"
+	require.Equal(t, expectedNormalisedEventName, normalisedEventName)
 }
