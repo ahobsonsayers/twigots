@@ -112,7 +112,7 @@ func matchesEventName(listing TicketListing, eventName string, similarity float6
 
 	ticketSimilarity := strutil.Similarity(
 		ticketEventName, desiredEventName,
-		metrics.NewJaroWinkler(),
+		metrics.NewSmithWatermanGotoh(),
 	)
 	if similarity <= 0 {
 		return ticketSimilarity >= defaultSimilarity
