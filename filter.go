@@ -10,7 +10,7 @@ import (
 	"github.com/samber/lo"
 )
 
-const defaultSimilarity = 0.85
+const defaultSimilarity = 0.9
 
 // A filter to use on ticket listing(s). A ticket listing can either match the filter or not.
 //
