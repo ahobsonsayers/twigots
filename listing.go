@@ -3,9 +3,7 @@ package twigots // nolint
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
-	"strings"
 )
 
 // TicketListing is a listing of ticket(s) on Twickets
@@ -170,16 +168,6 @@ func (l TicketListings) Filter(filters ...Filter) (TicketListings, error) {
 	}
 
 	return filteredListings, nil
-}
-
-var spaceRegex = regexp.MustCompile(`\s+`)
-
-func normaliseEventName(eventName string) string {
-	eventName = strings.TrimSpace(eventName)
-	eventName = spaceRegex.ReplaceAllString(eventName, " ")
-	eventName = strings.ToLower(eventName)
-	eventName = strings.TrimPrefix(eventName, "the ")
-	return eventName
 }
 
 func UnmarshalTwicketsFeedJson(data []byte) ([]TicketListing, error) {

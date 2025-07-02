@@ -3,14 +3,19 @@ package twigots
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
+	"unicode"
 
-	"github.com/adrg/strutil"
-	"github.com/adrg/strutil/metrics"
+	"github.com/hbollon/go-edlib"
 	"github.com/samber/lo"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
-const defaultSimilarity = 0.85
+const defaultSimilarity = 0.9
 
 // A filter to use on ticket listing(s). A ticket listing can either match the filter or not.
 //
@@ -107,13 +112,10 @@ func matchesFilter(listing TicketListing, filter Filter) bool {
 
 // matchesEventName returns whether a ticket listing matches a desired event name
 func matchesEventName(listing TicketListing, eventName string, similarity float64) bool {
-	ticketEventName := normaliseEventName(listing.Event.Name)
-	desiredEventName := normaliseEventName(eventName)
+	ticketEventName := normaliseString(listing.Event.Name)
+	desiredEventName := normaliseString(eventName)
 
-	ticketSimilarity := strutil.Similarity(
-		ticketEventName, desiredEventName,
-		metrics.NewJaroWinkler(),
-	)
+	ticketSimilarity := substringSimilarity(desiredEventName, ticketEventName)
 	if similarity <= 0 {
 		return ticketSimilarity >= defaultSimilarity
 	}
@@ -158,4 +160,113 @@ func matchesCreatedAfter(listing TicketListing, createdAfter time.Time) bool {
 		return true
 	}
 	return listing.CreatedAt.Time.After(createdAfter)
+}
+
+var (
+	// Text transformer to remove accents from strings
+	accentTransformer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	// Regular expression to match one or more whitespace characters
+	spaceRegex = regexp.MustCompile(`\s+`)
+	// Regular expression to match non-alphanumeric characters
+	nonAlphaNumericRegex = regexp.MustCompile(`[^a-z0-9]`)
+)
+
+// normaliseString normalizes a given string by removing accents, converting to lowercase,
+// removing leading/trailing whitespace, replacing '&' with 'and', and replacing special characters with spaces.
+func normaliseString(eventName string) string {
+	// TODO: This function could be improved.
+	// TODO: The accent transformer does not currently support ł, Ł, ø, Æ, which will be removed.
+
+	// Remove leading and trailing whitespace
+	eventName = strings.TrimSpace(eventName)
+	// Remove all accented characters
+	eventName, _, _ = transform.String(accentTransformer, eventName)
+	// Convert to lower case
+	eventName = strings.ToLower(eventName)
+	// Remove leading 'the'
+	eventName = strings.TrimPrefix(eventName, "the ")
+	// Replace '&' with 'and', ensuring spaces
+	eventName = strings.ReplaceAll(eventName, "&", " and ")
+	// Replace all special characters with spaces
+	eventName = nonAlphaNumericRegex.ReplaceAllString(eventName, " ")
+	// Replace all 2+ whitespaces with a single space
+	eventName = spaceRegex.ReplaceAllString(eventName, " ")
+	// Remove leading and trailing whitespace again
+	eventName = strings.TrimSpace(eventName)
+
+	return eventName
+}
+
+// Gap penalty in substring similarity calculation
+const substringSimilarityGapPenalty = 1
+
+// substringSimilarity calculates the similarity between a substring and a target string.
+// The similarity is calculated using a modified Smith-Waterman local alignment algorithm to align the substring
+// with the target string, and optimal string alignment Damerau-Levenshtein to calculate word level similarity.
+//
+// See:
+// https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm
+// https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance#Optimal_string_alignment_distance
+func substringSimilarity(subString, targetString string) float64 {
+	// Split strings up into words
+	subWords := strings.Fields(subString)
+	targetWords := strings.Fields(targetString)
+
+	numSubWords := len(subWords)
+	numTargetWords := len(targetWords)
+
+	// If both or one string has no words, exit early
+	if numSubWords == 0 && numTargetWords == 0 {
+		return 1
+	}
+	if numSubWords == 0 || numTargetWords == 0 {
+		return 0
+	}
+
+	// Create a matrix (initialised with 0's) to store the similarity scores
+	numRows := numSubWords + 1
+	numCols := numTargetWords + 1
+	matrix := make([][]float64, numRows)
+	for i := range matrix {
+		matrix[i] = make([]float64, numCols)
+	}
+
+	// Do similarity calculations
+	for i := 1; i < numRows; i++ {
+		for j := 1; j < numCols; j++ {
+			similarity, err := edlib.StringsSimilarity(subWords[i-1], targetWords[j-1], edlib.DamerauLevenshtein)
+			if err != nil {
+				// An error will never occur if a valid similarity algorithm is used.
+				// If an error does occur (due to an error in the code), panic so we catch it.
+				panic(err)
+			}
+
+			// Calculate the match score
+			matchScore := matrix[i-1][j-1] + float64(similarity)
+			// Calculate the delete score (penalize missing words in substring)
+			deleteScore := matrix[i-1][j] - substringSimilarityGapPenalty
+			// Calculate the insert score (penalize additional words in substring)
+			insertScore := matrix[i][j-1] - substringSimilarityGapPenalty
+
+			// Store the maximum score in the matrix
+			matrix[i][j] = maxUtil(0, matchScore, insertScore, deleteScore)
+		}
+	}
+
+	// Find the maximum score in the last row (all substring words consumed)
+	maxScore := maxUtil(matrix[numSubWords]...)
+
+	// Return the average similarity across all words
+	avgSimilarity := maxScore / float64(numSubWords)
+	return avgSimilarity
+}
+
+func maxUtil(nums ...float64) float64 {
+	maxNum := nums[0]
+	for _, num := range nums[1:] {
+		if num > maxNum {
+			maxNum = num
+		}
+	}
+	return maxNum
 }

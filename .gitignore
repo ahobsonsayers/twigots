@@ -34,3 +34,8 @@ go.work
 
 # Local go mod vendor ignore
 vendor/
+
+# Ignore certain directories
+scratch/
+
+# Ignore certain files
