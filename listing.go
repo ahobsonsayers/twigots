@@ -3,14 +3,7 @@ package twigots // nolint
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
-	"strings"
-	"unicode"
-
-	"golang.org/x/text/runes"
-	"golang.org/x/text/transform"
-	"golang.org/x/text/unicode/norm"
 )
 
 // TicketListing is a listing of ticket(s) on Twickets
@@ -197,25 +190,4 @@ func UnmarshalTwicketsFeedJson(data []byte) ([]TicketListing, error) {
 	}
 
 	return listings, nil
-}
-
-var (
-	accentTransformer    = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
-	spaceRegex           = regexp.MustCompile(`\s+`)
-	nonAlphaNumericRegex = regexp.MustCompile(`[^a-z0-9]`)
-)
-
-func NormaliseString(eventName string) string {
-	// TODO: this probably could be done better
-	// TODO: accent transformer does not currently support ł, Ł, ø, Æ. These will be removed
-	eventName = strings.TrimSpace(eventName)                          // remove leading and trailing whitespace
-	eventName, _, _ = transform.String(accentTransformer, eventName)  // remove all accented characters
-	eventName = strings.ToLower(eventName)                            // convert to lower case
-	eventName = strings.TrimPrefix(eventName, "the ")                 // remove leading 'the'
-	eventName = strings.ReplaceAll(eventName, "&", " and ")           // replace & with 'and', ensuring spaces
-	eventName = nonAlphaNumericRegex.ReplaceAllString(eventName, " ") // replace all special characters with spaces
-	eventName = spaceRegex.ReplaceAllString(eventName, " ")           // replaces all 2+ whitespaces wth a single space
-	eventName = strings.TrimSpace(eventName)                          // remove leading and trailing whitespace again
-
-	return eventName
 }

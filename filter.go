@@ -3,11 +3,17 @@ package twigots
 import (
 	"errors"
 	"fmt"
+	"log"
+	"regexp"
+	"strings"
 	"time"
+	"unicode"
 
-	"github.com/adrg/strutil"
-	"github.com/adrg/strutil/metrics"
+	"github.com/hbollon/go-edlib"
 	"github.com/samber/lo"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 const defaultSimilarity = 0.9
@@ -107,13 +113,10 @@ func matchesFilter(listing TicketListing, filter Filter) bool {
 
 // matchesEventName returns whether a ticket listing matches a desired event name
 func matchesEventName(listing TicketListing, eventName string, similarity float64) bool {
-	ticketEventName := NormaliseString(listing.Event.Name)
-	desiredEventName := NormaliseString(eventName)
+	ticketEventName := normaliseString(listing.Event.Name)
+	desiredEventName := normaliseString(eventName)
 
-	ticketSimilarity := strutil.Similarity(
-		ticketEventName, desiredEventName,
-		metrics.NewSmithWatermanGotoh(),
-	)
+	ticketSimilarity := substringSimilarity(ticketEventName, desiredEventName)
 	if similarity <= 0 {
 		return ticketSimilarity >= defaultSimilarity
 	}
@@ -158,4 +161,92 @@ func matchesCreatedAfter(listing TicketListing, createdAfter time.Time) bool {
 		return true
 	}
 	return listing.CreatedAt.Time.After(createdAfter)
+}
+
+var (
+	accentTransformer    = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	spaceRegex           = regexp.MustCompile(`\s+`)
+	nonAlphaNumericRegex = regexp.MustCompile(`[^a-z0-9]`)
+)
+
+func normaliseString(eventName string) string {
+	// TODO: this probably could be done better
+	// TODO: accent transformer does not currently support ł, Ł, ø, Æ. These will be removed
+	eventName = strings.TrimSpace(eventName)                          // remove leading and trailing whitespace
+	eventName, _, _ = transform.String(accentTransformer, eventName)  // remove all accented characters
+	eventName = strings.ToLower(eventName)                            // convert to lower case
+	eventName = strings.TrimPrefix(eventName, "the ")                 // remove leading 'the'
+	eventName = strings.ReplaceAll(eventName, "&", " and ")           // replace & with 'and', ensuring spaces
+	eventName = nonAlphaNumericRegex.ReplaceAllString(eventName, " ") // replace all special characters with spaces
+	eventName = spaceRegex.ReplaceAllString(eventName, " ")           // replaces all 2+ whitespaces wth a single space
+	eventName = strings.TrimSpace(eventName)                          // remove leading and trailing whitespace again
+
+	return eventName
+}
+
+const substringSimilarityGapPenalty = 1
+
+func substringSimilarity(subString, targetString string) float64 {
+	// Split strings up into words
+	subWords := strings.Fields(subString)
+	targetWords := strings.Fields(targetString)
+
+	numSubWords := len(subWords)
+	numTargetWords := len(targetWords)
+
+	// If both or one string has no words, exit early
+	if numSubWords == 0 && numTargetWords == 0 {
+		return 1
+	}
+	if numSubWords == 0 || numTargetWords == 0 {
+		return 0
+	}
+
+	numRows := numSubWords + 1
+	numCols := numTargetWords + 1
+
+	// Create matrix initialised with 0's
+	matrix := make([][]float64, numRows)
+	for i := range matrix {
+		matrix[i] = make([]float64, numCols)
+	}
+
+	// Use modified Smith–Waterman local alignment of the full string,
+	// with optimal string alignment Damerau–Levenshtein for word level similarity.
+	// See:
+	// https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm
+	// https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance#Optimal_string_alignment_distance
+	for i := 1; i < numRows; i++ {
+		for j := 1; j < numCols; j++ {
+			similarity, err := edlib.StringsSimilarity(subWords[i-1], targetWords[j-1], edlib.DamerauLevenshtein)
+			if err != nil {
+				// An error will never occur if a valid similarly algorithm is used.
+				// If an error does occur (due to an error in the code) log a fatal error.
+				log.Fatal(err)
+			}
+
+			matchScore := matrix[i-1][j-1] + float64(similarity)
+			deleteScore := matrix[i-1][j] - substringSimilarityGapPenalty // Penalise missing words in substring
+			insertScore := matrix[i][j-1] - substringSimilarityGapPenalty // Penalise additional words in substring
+
+			matrix[i][j] = maxUtil(0, matchScore, insertScore, deleteScore)
+		}
+	}
+
+	// Find maximum score in last row (all substring words consumed)
+	maxScore := maxUtil(matrix[numSubWords]...)
+
+	// Return average similarity across all words
+	avgSimilarity := maxScore / float64(numSubWords)
+	return avgSimilarity
+}
+
+func maxUtil(nums ...float64) float64 {
+	maxNum := nums[0]
+	for _, num := range nums[1:] {
+		if num > maxNum {
+			maxNum = num
+		}
+	}
+	return maxNum
 }

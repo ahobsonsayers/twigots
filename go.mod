@@ -5,13 +5,14 @@ go 1.23.0
 toolchain go1.24.0
 
 require (
-	github.com/adrg/strutil v0.3.1
+	github.com/hbollon/go-edlib v1.6.0
 	github.com/imroc/req/v3 v3.52.2
 	github.com/joho/godotenv v1.5.1
 	github.com/k3a/html2text v1.2.1
 	github.com/orsinium-labs/enum v1.4.0
 	github.com/samber/lo v1.47.0
 	github.com/stretchr/testify v1.9.0
+	golang.org/x/text v0.24.0
 )
 
 require (
@@ -37,7 +38,6 @@ require (
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
