@@ -3,7 +3,6 @@ package twigots
 import (
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -116,7 +115,7 @@ func matchesEventName(listing TicketListing, eventName string, similarity float6
 	ticketEventName := normaliseString(listing.Event.Name)
 	desiredEventName := normaliseString(eventName)
 
-	ticketSimilarity := substringSimilarity(ticketEventName, desiredEventName)
+	ticketSimilarity := substringSimilarity(desiredEventName, ticketEventName)
 	if similarity <= 0 {
 		return ticketSimilarity >= defaultSimilarity
 	}
@@ -221,8 +220,8 @@ func substringSimilarity(subString, targetString string) float64 {
 			similarity, err := edlib.StringsSimilarity(subWords[i-1], targetWords[j-1], edlib.DamerauLevenshtein)
 			if err != nil {
 				// An error will never occur if a valid similarly algorithm is used.
-				// If an error does occur (due to an error in the code) log a fatal error.
-				log.Fatal(err)
+				// If an error does occur (due to an error in the code) panic so we catch it.
+				panic(err)
 			}
 
 			matchScore := matrix[i-1][j-1] + float64(similarity)
