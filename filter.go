@@ -34,7 +34,7 @@ func FilterTicketListings(listings []TicketListing, predicates ...TicketListingP
 	return result
 }
 
-// TicketListingMatchesAllPredicates returns whether a ticket listing satisfies all of the predicates provided.
+// TicketListingMatchesAllPredicates checks whether a ticket listing satisfies all of the predicates provided.
 // Returns true if no predicates are provided.
 func TicketListingMatchesAllPredicates(listing TicketListing, predicates ...TicketListingPredicate) bool {
 	for _, predicate := range predicates {
@@ -45,7 +45,7 @@ func TicketListingMatchesAllPredicates(listing TicketListing, predicates ...Tick
 	return true
 }
 
-// TicketListingMatchesAnyPredicate returns whether a ticket listing satisfies any of the predicates provided.
+// TicketListingMatchesAnyPredicate checks whether a ticket listing satisfies any of the predicates provided.
 // Returns false if no predicates are provided.
 func TicketListingMatchesAnyPredicate(listing TicketListing, predicates ...TicketListingPredicate) bool {
 	for _, predicate := range predicates {

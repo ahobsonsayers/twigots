@@ -119,17 +119,16 @@ func (l TicketListing) DiscountString() string {
 	return discountString + "%"
 }
 
-// MatchesAnyFilter checks if a ticket listing matches any of the filters provided.
-func (l TicketListing) MatchesAnyFilter(filters ...Filter) (bool, error) {
-	// Validate filters
-	for _, filter := range filters {
-		err := filter.Validate()
-		if err != nil {
-			return false, fmt.Errorf("invalid filter: %w", err)
-		}
-	}
+// MatchesAllPredicates checks whether the ticket listing satisfies all of the predicates provided.
+// Returns true if no predicates are provided.
+func (l TicketListing) MatchesAllPredicates(predicates ...TicketListingPredicate) bool {
+	return TicketListingMatchesAllPredicates(l, predicates...)
+}
 
-	return matchesAnyFilter(l, filters...), nil
+// MatchesAnyPredicate checks whether the ticket listing satisfies any of the predicates provided.
+// Returns false if no predicates are provided.
+func (l TicketListing) MatchesAnyPredicate(predicates ...TicketListingPredicate) bool {
+	return TicketListingMatchesAnyPredicate(l, predicates...)
 }
 
 // TicketListings is a slice of ticket listings.
