@@ -96,7 +96,7 @@ func EventNamePredicate(eventName string, minimumSimilarity float64) TicketListi
 // RegionsPredicate creates a predicate that matches ticket listings in any of the specified regions.
 // Invalid regions will be ignored.
 // If regions is empty, or all regions are invalid any region will match.
-func RegionsPredicate(regions []Region) TicketListingPredicate {
+func RegionsPredicate(regions ...Region) TicketListingPredicate {
 	// Filter out invalid regions
 	validRegions := make([]Region, 0, len(regions))
 	for _, region := range regions {

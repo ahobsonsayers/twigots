@@ -53,7 +53,7 @@ func main() {
 	apiKey := "my_api_key"
 
 	// Fetch ticket listings
-	client := twigots.NewClient(nil) // Or use a custom http client
+	client := twigots.NewClient() // Or use a custom http client
 	listings, err := client.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
@@ -72,30 +72,36 @@ func main() {
 
 	log.Printf("Fetched %d ticket listings", len(listings))
 
-	// Filter ticket listing for the ones we want
-	filteredListings, err := listings.Filter(
-		// Filter for listings of Hamilton tickets
-		twigots.Filter{Event: "Hamilton"},
-		// Also filter for listings of Coldplay tickets.
-		// Lets impose extra restrictions on these.
-		twigots.Filter{
-			Event:           "Coldplay", // Required
-			EventSimilarity: 1,          // Avoid false positives
-			Regions: []twigots.Region{
-				twigots.RegionLondon,
-				twigots.RegionSouth,
-			},
-			NumTickets:  2,   // Exactly 2 tickets in the listing
-			MinDiscount: 0.1, // Discount of > 10%
-		},
+	// Filter ticket listings just by name
+	hamiltonListings := twigots.FilterTicketListings(
+		listings,
+		twigots.EventNamePredicate("Hamilton", 0.9), // Similarity of 0.9 - allow minor mismatches
 	)
-	if err != nil {
-		log.Fatal(err)
+	for _, listing := range hamiltonListings {
+		slog.Info(
+			"Found Hamilton ticket listing",
+			"Event", listing.Event.Name,
+			"NumTickets", listing.NumTickets,
+			"Price", listing.TotalPriceInclFee().String(),
+			"OriginalPrice", listing.OriginalTicketPrice().String(),
+			"URL", listing.URL(),
+		)
 	}
 
-	for _, listing := range filteredListings {
+	// Filter ticket listings just by several filters
+	coldplayListings := twigots.FilterTicketListings(
+		listings,
+		twigots.EventNamePredicate("Coldplay", 1), // Similarity of 1 - exact match only
+		twigots.RegionsPredicate( // Only in specific regions
+			twigots.RegionLondon,
+			twigots.RegionSouth,
+		),
+		twigots.NumTicketsPredicate(2),    // Exactly 2 tickets in the listing
+		twigots.MinDiscountPredicate(0.1), // Discount of > 10%
+	)
+	for _, listing := range coldplayListings {
 		slog.Info(
-			"Ticket listing found matching a filter",
+			"Found Coldplay ticket listing",
 			"Event", listing.Event.Name,
 			"NumTickets", listing.NumTickets,
 			"Price", listing.TotalPriceInclFee().String(),
