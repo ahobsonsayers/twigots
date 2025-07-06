@@ -185,9 +185,11 @@ func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings i
 }
 
 func filterToCreatedAfter(listings TicketListings, createdAfter time.Time) TicketListings {
+	createdAfterPredicate := CreatedAfterPredicate(createdAfter)
 	filteredListings := make(TicketListings, 0, len(listings))
 	for _, listing := range listings {
-		if matchesCreatedAfter(listing, createdAfter) {
+		ok := createdAfterPredicate(listing)
+		if ok {
 			filteredListings = append(filteredListings, listing)
 		}
 	}

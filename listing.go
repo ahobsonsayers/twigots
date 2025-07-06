@@ -119,19 +119,6 @@ func (l TicketListing) DiscountString() string {
 	return discountString + "%"
 }
 
-// MatchesAnyFilter checks if a ticket listing matches any of the filters provided.
-func (l TicketListing) MatchesAnyFilter(filters ...Filter) (bool, error) {
-	// Validate filters
-	for _, filter := range filters {
-		err := filter.Validate()
-		if err != nil {
-			return false, fmt.Errorf("invalid filter: %w", err)
-		}
-	}
-
-	return matchesAnyFilter(l, filters...), nil
-}
-
 // TicketListings is a slice of ticket listings.
 type TicketListings []TicketListing
 
@@ -143,31 +130,6 @@ func (l TicketListings) GetById(id string) *TicketListing {
 		}
 	}
 	return nil
-}
-
-// Filter ticket listings based on whether they match any of the filters provided.
-func (l TicketListings) Filter(filters ...Filter) (TicketListings, error) {
-	if len(filters) == 0 {
-		return l, nil
-	}
-
-	// Validate filters
-	for _, filter := range filters {
-		err := filter.Validate()
-		if err != nil {
-			return nil, fmt.Errorf("invalid filter: %w", err)
-		}
-	}
-
-	// Filter listings
-	filteredListings := make(TicketListings, 0, len(l))
-	for _, listing := range l {
-		if matchesAnyFilter(listing, filters...) {
-			filteredListings = append(filteredListings, listing)
-		}
-	}
-
-	return filteredListings, nil
 }
 
 func UnmarshalTwicketsFeedJson(data []byte) ([]TicketListing, error) {

@@ -1,7 +1,6 @@
 package twigots
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -15,152 +14,167 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-const defaultSimilarity = 0.9
+// TicketListingPredicate is a predicate function that evaluates a TicketListing
+// and returns true if the listing satisfies the condition.
+type TicketListingPredicate func(TicketListing) bool
 
-// A filter to use on ticket listing(s). A ticket listing can either match the filter or not.
-//
-// A ticket listing must satisfy all specified filter fields to match, making this an AND filter.
-type Filter struct {
-	// Name of event on ticket listing to match.
-	// Required.
-	Event string
-
-	// Similarity of event name on ticket listing to the event name specified in the filter.
-	// Specified as a float, between 0 and 1 (with 1 representing an exact match).
-	// Leave this unset or set to <=0 to use the default.
-	// Default is 0.85 which accounts for variances in event names.
-	// e.g. Taylor Swift and Taylor Swift: The Eras Tour should match.
-	EventSimilarity float64
-
-	// Regions on ticket listings to match.
-	// Leave this unset or empty to match any region.
-	// Defaults to unset.
-	Regions []Region
-
-	// Number of tickets in a listing to match.
-	// Leave this unset or set to <=0 to match any number of tickets.
-	// Defaults to unset.
-	NumTickets int
-
-	// Minimum discount (including fee) of tickets in a listing to match.
-	// Specified as a float, between 0 and 1 (with 1 representing 100% off).
-	// Leave this unset or set to <=0 to match any discount (including no discount).
-	// Defaults to unset.
-	MinDiscount float64
-
-	// Time a listing must be created before to be match
-	// Leave this unset to match any creation time.
-	// Defaults to unset.
-	CreatedBefore time.Time
-
-	// Time a listing must be created after to be match
-	// Leave this unset to match any creation time.
-	// Defaults to unset.
-	CreatedAfter time.Time
-}
-
-// Validate the filter.
-// This is used internally to check a filter, but can also be used externally.
-func (f Filter) Validate() error {
-	if f.Event == "" {
-		return errors.New("event name must be set")
+// FilterTicketListings filters ticket listings to those that satisfy all of the provided predicates.
+// If no predicates are provided, all listings are returned.
+func FilterTicketListings(listings []TicketListing, predicates ...TicketListingPredicate) []TicketListing {
+	if len(predicates) == 0 {
+		return listings
 	}
 
-	if f.EventSimilarity > 1 {
-		return errors.New("similarity cannot be > 1")
-	}
-
-	for _, region := range f.Regions {
-		if !Regions.Contains(region) {
-			return fmt.Errorf("region '%s' is not valid", region)
+	result := make([]TicketListing, 0, len(listings))
+	for _, listing := range listings {
+		if TicketListingMatchesAllPredicates(listing, predicates...) {
+			result = append(result, listing)
 		}
 	}
 
-	if f.MinDiscount > 1 {
-		return errors.New("discount cannot be > 1")
-	}
-
-	return nil
+	return result
 }
 
-// matchesAnyFilter returns whether a ticket listing matches any of the filters provided.
-// filters are assumed to have been validated first.
-func matchesAnyFilter(listing TicketListing, filters ...Filter) bool {
-	if len(filters) == 0 {
-		return true
+// TicketListingMatchesAllPredicates checks whether a ticket listing satisfies all of the predicates provided.
+// Returns true if no predicates are provided.
+func TicketListingMatchesAllPredicates(listing TicketListing, predicates ...TicketListingPredicate) bool {
+	for _, predicate := range predicates {
+		if !predicate(listing) {
+			return false
+		}
 	}
+	return true
+}
 
-	for _, filter := range filters {
-		if matchesFilter(listing, filter) {
+// TicketListingMatchesAnyPredicate checks whether a ticket listing satisfies any of the predicates provided.
+// Returns false if no predicates are provided.
+func TicketListingMatchesAnyPredicate(listing TicketListing, predicates ...TicketListingPredicate) bool {
+	for _, predicate := range predicates {
+		if predicate(listing) {
 			return true
 		}
 	}
-
 	return false
 }
 
-// matchesAnyFilter returns whether a ticket listing matches the filters provided.
-// filter is assumed to have been validated first.
-func matchesFilter(listing TicketListing, filter Filter) bool {
-	return matchesEventName(listing, filter.Event, filter.EventSimilarity) &&
-		matchesRegions(listing, filter.Regions) &&
-		matchesNumTickets(listing, filter.NumTickets) &&
-		matchesDiscount(listing, filter.MinDiscount) &&
-		matchesCreatedBefore(listing, filter.CreatedBefore) &&
-		matchesCreatedAfter(listing, filter.CreatedAfter)
-}
-
-// matchesEventName returns whether a ticket listing matches a desired event name
-func matchesEventName(listing TicketListing, eventName string, similarity float64) bool {
-	ticketEventName := normaliseString(listing.Event.Name)
-	desiredEventName := normaliseString(eventName)
-
-	ticketSimilarity := substringSimilarity(desiredEventName, ticketEventName)
-	if similarity <= 0 {
-		return ticketSimilarity >= defaultSimilarity
+// EventNamePredicate creates a predicate that matches ticket listings with an event name similar to one specified.
+// Similarity is a float between 0 and 1 (with 0 represent	ing no similarity and 1 representing an exact match).
+// Set minimumSimilarity to <=0 to use the default of 0.9 which allows for minor variances in event names.
+// If eventName is empty, any event name will match.
+// If minimumSimilarity is set to >1, minimumSimilarity will be set to 1 (exact match only).
+func EventNamePredicate(eventName string, minimumSimilarity float64) TicketListingPredicate {
+	// If no event name specified, match any event
+	if eventName == "" {
+		return alwaysPredicate
 	}
-	return ticketSimilarity >= similarity
-}
 
-// matchesRegions determines whether a ticket listing matches any desired regions.
-func matchesRegions(listing TicketListing, regions []Region) bool {
-	if len(regions) == 0 {
-		return true
+	// Use default similarity if not specified or negative
+	if minimumSimilarity <= 0 {
+		minimumSimilarity = 0.9
 	}
-	return lo.Contains(regions, listing.Event.Venue.Location.Region)
+
+	// Clamp similarity to maximum of 1.0
+	if minimumSimilarity > 1 {
+		minimumSimilarity = 1.0
+	}
+
+	return func(listing TicketListing) bool {
+		// Normalise event names
+		desiredEventName := normaliseString(eventName)
+		listingEventName := normaliseString(listing.Event.Name)
+
+		// Add spaces on either side of event name to help prevent
+		// matches of word that is contained within another word
+		desiredEventName = fmt.Sprintf(" %s ", desiredEventName)
+		listingEventName = fmt.Sprintf(" %s ", listingEventName)
+
+		eventSimilarity := substringSimilarity(desiredEventName, listingEventName)
+		return eventSimilarity >= minimumSimilarity
+	}
 }
 
-// matchesNumTickets determines whether a ticket listing matches a desired number of tickets
-func matchesNumTickets(listing TicketListing, numTickets int) bool {
+// RegionsPredicate creates a predicate that matches ticket listings in any of the specified regions.
+// Invalid regions will be ignored.
+// If regions is empty, or all regions are invalid any region will match.
+func RegionsPredicate(regions ...Region) TicketListingPredicate {
+	// Filter out invalid regions
+	validRegions := make([]Region, 0, len(regions))
+	for _, region := range regions {
+		if Regions.Contains(region) {
+			validRegions = append(validRegions, region)
+		}
+	}
+
+	// If no valid regions specified, match any region
+	if len(validRegions) == 0 {
+		return alwaysPredicate
+	}
+
+	return func(listing TicketListing) bool {
+		return lo.Contains(validRegions, listing.Event.Venue.Location.Region)
+	}
+}
+
+// NumTicketsPredicate creates a predicate that matches ticket listings with the specified number of tickets.
+// Set numTickets to <=0 to match any number of tickets.
+func NumTicketsPredicate(numTickets int) TicketListingPredicate {
+	// If no specific number specified, match any number
 	if numTickets <= 0 {
-		return true
+		return alwaysPredicate
 	}
-	return listing.NumTickets == numTickets
+
+	return func(listing TicketListing) bool {
+		return listing.NumTickets == numTickets
+	}
 }
 
-// matchesDiscount determines whether a ticket listing matches a desired discount.
-func matchesDiscount(listing TicketListing, discount float64) bool {
-	if discount <= 0 {
-		return true
+// MinDiscountPredicate creates a predicate that matches ticket listings with at least the specified discount.
+// Discount is specified as a float, between 0 and 1 (with 0 representing no discount and 1 representing 100% off).
+// Set minDiscount to <=0 to match any discount (including no discount).
+// If minDiscount is set to >1, minDiscount will be set to 1 (100% discount only).
+func MinDiscountPredicate(minDiscount float64) TicketListingPredicate {
+	// Use no minimum discount if not specified or negative
+	if minDiscount <= 0 {
+		return alwaysPredicate
 	}
-	return listing.Discount() >= discount
+
+	// Clamp discount to maximum of 1.0
+	if minDiscount > 1 {
+		minDiscount = 1.0
+	}
+
+	return func(listing TicketListing) bool {
+		return listing.Discount() >= minDiscount
+	}
 }
 
-// matchesCreatedBefore determines whether a ticket listing matches a desired created before time.
-func matchesCreatedBefore(listing TicketListing, createdBefore time.Time) bool {
+// CreatedBeforePredicate creates a predicate that matches ticket listings created before the specified time.
+// If createdBefore is zero time, any creation time will match.
+func CreatedBeforePredicate(createdBefore time.Time) TicketListingPredicate {
+	// If no time specified, match any creation time
 	if createdBefore.IsZero() {
-		return true
+		return alwaysPredicate
 	}
-	return listing.CreatedAt.Time.Before(createdBefore)
+
+	return func(listing TicketListing) bool {
+		return listing.CreatedAt.Time.Before(createdBefore)
+	}
 }
 
-// matchesCreatedAfter determines whether a ticket listing matches a desired created after time.
-func matchesCreatedAfter(listing TicketListing, createdAfter time.Time) bool {
+// CreatedAfterPredicate creates a predicate that matches ticket listings created after the specified time.
+// If createdAfter is zero time, any creation time will match.
+func CreatedAfterPredicate(createdAfter time.Time) TicketListingPredicate {
+	// If no time specified, match any creation time
 	if createdAfter.IsZero() {
-		return true
+		return alwaysPredicate
 	}
-	return listing.CreatedAt.Time.After(createdAfter)
+
+	return func(listing TicketListing) bool {
+		return listing.CreatedAt.Time.After(createdAfter)
+	}
 }
+
+func alwaysPredicate(_ TicketListing) bool { return true }
 
 var (
 	// Text transformer to remove accents from strings
