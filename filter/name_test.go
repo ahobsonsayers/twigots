@@ -1,9 +1,9 @@
-package twigots
+package filter
 
 import (
 	"testing"
-	"time"
 
+	"github.com/ahobsonsayers/twigots"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,8 +12,8 @@ func TestEventNamePredicate(t *testing.T) {
 	desiredEventName := "Stranger Things"
 	actualEventName := "Stranger Things: The First Shadow"
 
-	predicate := EventNamePredicate(desiredEventName, 1)
-	listing := TicketListing{Event: Event{Name: actualEventName}}
+	predicate := EventName(desiredEventName, 1)
+	listing := twigots.TicketListing{Event: twigots.Event{Name: actualEventName}}
 
 	match := predicate(listing)
 	require.True(t, match)
@@ -22,8 +22,8 @@ func TestEventNamePredicate(t *testing.T) {
 	desiredEventName = "Harry Potter and the Cursed Child"
 	actualEventName = "Harry Potter & The Cursed Child Parts 1 & 2"
 
-	predicate = EventNamePredicate(desiredEventName, 1)
-	listing = TicketListing{Event: Event{Name: actualEventName}}
+	predicate = EventName(desiredEventName, 1)
+	listing = twigots.TicketListing{Event: twigots.Event{Name: actualEventName}}
 
 	match = predicate(listing)
 	require.True(t, match)
@@ -32,8 +32,8 @@ func TestEventNamePredicate(t *testing.T) {
 	desiredEventName = "Oasis"
 	actualEventName = "Oasish"
 
-	predicate = EventNamePredicate(desiredEventName, 0.9)
-	listing = TicketListing{Event: Event{Name: actualEventName}}
+	predicate = EventName(desiredEventName, 0.9)
+	listing = twigots.TicketListing{Event: twigots.Event{Name: actualEventName}}
 
 	match = predicate(listing)
 	require.False(t, match)
@@ -42,45 +42,9 @@ func TestEventNamePredicate(t *testing.T) {
 	desiredEventName = "The Who"
 	actualEventName = "The The"
 
-	predicate = EventNamePredicate(desiredEventName, 0.9)
-	listing = TicketListing{Event: Event{Name: actualEventName}}
+	predicate = EventName(desiredEventName, 0.9)
+	listing = twigots.TicketListing{Event: twigots.Event{Name: actualEventName}}
 
-	match = predicate(listing)
-	require.False(t, match)
-}
-
-func TestCreatedAfterPredicate(t *testing.T) {
-	currentTime := time.Now()
-
-	// Should match (created after 3 minutes ago)
-	createdAfterTime := currentTime.Add(-3 * time.Minute)
-	actualCreatedTime := currentTime.Add(-1 * time.Minute)
-	predicate := CreatedAfterPredicate(createdAfterTime)
-	listing := TicketListing{
-		Event:     Event{Name: "test"},
-		CreatedAt: UnixTime{actualCreatedTime},
-	}
-	match := predicate(listing)
-	require.True(t, match)
-
-	createdAfterTime = currentTime.Add(-3 * time.Minute)
-	actualCreatedTime = currentTime.Add(-2 * time.Minute)
-	predicate = CreatedAfterPredicate(createdAfterTime)
-	listing = TicketListing{
-		Event:     Event{Name: "test"},
-		CreatedAt: UnixTime{actualCreatedTime},
-	}
-	match = predicate(listing)
-	require.True(t, match)
-
-	// Should not match (created before 3 minutes ago)
-	createdAfterTime = currentTime.Add(-3 * time.Minute)
-	actualCreatedTime = currentTime.Add(-4 * time.Minute)
-	predicate = CreatedAfterPredicate(createdAfterTime)
-	listing = TicketListing{
-		Event:     Event{Name: "test"},
-		CreatedAt: UnixTime{actualCreatedTime},
-	}
 	match = predicate(listing)
 	require.False(t, match)
 }
