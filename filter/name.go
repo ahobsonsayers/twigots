@@ -13,8 +13,13 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// Gap penalty in substring similarity calculation
-const substringSimilarityGapPenalty = 1
+const (
+	// Default event name similarity if one not specified
+	DefaultEventNameSimilarity = 0.9
+
+	// Gap penalty in substring similarity calculation
+	substringSimilarityGapPenalty = 1
+)
 
 var (
 	// Text transformer to remove accents from strings
@@ -42,7 +47,7 @@ func EventName(eventName string, minimumSimilarity float64) TicketListingPredica
 
 	// Use default similarity if not specified or negative
 	if minimumSimilarity <= 0 {
-		minimumSimilarity = 0.9
+		minimumSimilarity = DefaultEventNameSimilarity
 	}
 
 	// Clamp similarity to maximum of 1.0
