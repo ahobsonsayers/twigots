@@ -126,7 +126,7 @@ Setting a required similarity below, but close to 1, will allow for small incons
 
 False positives can also occur if your desired event name appears in the actual event name, but the event is not the one you want. This can often happen with things like tribute bands - see the example below.
 
-> **[!NOTE]**  
+> [!NOTE]
 > This is actually bidirectional substring matching, so either the desired event name or the actual event name can be the substring. This is important to take into account. See note below the false positive example for more info.
 
 **Example:**
@@ -134,7 +134,7 @@ False positives can also occur if your desired event name appears in the actual 
 ```
 Desired event: Taylor Swift
 Actual event: Taylor Swift: The Eras Tour
-Similarity score: **1**
+Similarity score: 1
 ```
 
 **Example of a false positive:**
@@ -142,10 +142,10 @@ Similarity score: **1**
 ```
 Desired event: Taylor Swift
 Actual event: Miss Americana: A Tribute to Taylor Swift
-Similarity score: **1** <- This is a exact match, but it is probably not the event we want
+Similarity score: 1 <- This is a exact match, but it is probably not the event we want
 ```
 
-> **[!NOTE]**  
+> [!NOTE]
 > In the false positive example above, as the substring matching is bidirectional, if you were looking explicitly for the **tribute** event, and an actual event called **Taylor Swift** event came up, the event similarity would still be 1.
 
 ### Normalization
@@ -160,13 +160,10 @@ This is done by:
 - Removing any **the** prefix
 - Trimming leading and trailing whitespace and replacing all 2+ whitespace with a single space
 - Replacing accented characters with their non-accented characters
+- Spaces are added to either side of the string, to help avoid cases where the word appears inside another word e.g. grate shouldn't match un*grate*ful
 
 ## Why the name twigots?
 
 Because its a stupid mash up of Tickets and Go... and also why not?
 
 [![Hits](https://hits.sh/github.com/ahobsonsayers/twigots.svg?view=today-total&label=Visitors%20Day%20%2F%20Total)](https://hits.sh/github.com/ahobsonsayers/twigots/)
-
-```
-
-```
