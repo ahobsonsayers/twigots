@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ahobsonsayers/twigots"
+	"github.com/ahobsonsayers/twigots/filter"
 )
 
 func main() {
@@ -33,9 +34,10 @@ func main() {
 	log.Printf("Fetched %d ticket listings", len(listings))
 
 	// Filter ticket listings just by name
-	hamiltonListings := twigots.FilterTicketListings(
+	// Use the default event name similarity (0.9) to allow minor mismatches
+	hamiltonListings := filter.FilterTicketListings(
 		listings,
-		twigots.EventNamePredicate("Hamilton", 0.9), // Similarity of 0.9 - allow minor mismatches
+		filter.EventName("Hamilton", filter.DefaultEventNameSimilarity),
 	)
 	for _, listing := range hamiltonListings {
 		slog.Info(
@@ -49,15 +51,15 @@ func main() {
 	}
 
 	// Filter ticket listings just by several filters
-	coldplayListings := twigots.FilterTicketListings(
+	coldplayListings := filter.FilterTicketListings(
 		listings,
-		twigots.EventNamePredicate("Coldplay", 1), // Similarity of 1 - exact match only
-		twigots.RegionsPredicate( // Only in specific regions
+		filter.EventName("Coldplay", 1), // Event name similarity of 1 - exact match only
+		filter.EventRegion( // Only in specific regions
 			twigots.RegionLondon,
 			twigots.RegionSouth,
 		),
-		twigots.NumTicketsPredicate(2),    // Exactly 2 tickets in the listing
-		twigots.MinDiscountPredicate(0.1), // Discount of > 10%
+		filter.NumTickets(2),    // Exactly 2 tickets in the listing
+		filter.MinDiscount(0.1), // Discount of > 10%
 	)
 	for _, listing := range coldplayListings {
 		slog.Info(
