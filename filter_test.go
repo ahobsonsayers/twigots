@@ -7,88 +7,82 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFilterEventName(t *testing.T) {
-	// These should match
-	strangerThings := "Stranger Things: The First Shadow"
-	strangerThingsFilter := "Stranger Things"
+func TestEventNamePredicate(t *testing.T) {
+	// Stranger Things should be an exact match even without : and a subtitle
+	desiredEventName := "Stranger Things"
+	actualEventName := "Stranger Things: The First Shadow"
 
-	backToTheFuture := "Back To The Future: The Musical"
-	backToTheFutureFilter := "Back To The Future"
+	predicate := EventNamePredicate(desiredEventName, 1)
+	listing := TicketListing{Event: Event{Name: actualEventName}}
 
-	harryPotter := "Harry Potter & The Cursed Child Parts 1 & 2"
-	harryPotterFilter := "Harry Potter and the Cursed Child"
+	match := predicate(listing)
+	require.True(t, match)
 
-	// These shouldn't match
-	theThe := "The The"
-	theWhoFilter := "The Who"
+	// Stranger Things should be an exact match even using and, without : and a subtitle
+	desiredEventName = "Harry Potter and the Cursed Child"
+	actualEventName = "Harry Potter & The Cursed Child Parts 1 & 2"
 
-	listings := TicketListings{
-		{Event: Event{Name: strangerThings}},
-		{Event: Event{Name: backToTheFuture}},
-		{Event: Event{Name: harryPotter}},
-		{Event: Event{Name: theThe}},
-	}
+	predicate = EventNamePredicate(desiredEventName, 1)
+	listing = TicketListing{Event: Event{Name: actualEventName}}
 
-	// Stranger Things
-	filteredListings, err := listings.Filter(Filter{
-		Event: strangerThingsFilter,
-	})
-	require.NoError(t, err)
-	require.Len(t, filteredListings, 1)
-	require.Equal(t, strangerThings, filteredListings[0].Event.Name)
+	match = predicate(listing)
+	require.True(t, match)
 
-	// Back to the Future
-	filteredListings, err = listings.Filter(Filter{
-		Event: backToTheFutureFilter,
-	})
-	require.NoError(t, err)
-	require.Len(t, filteredListings, 1)
-	require.Equal(t, backToTheFuture, filteredListings[0].Event.Name)
+	// Oasish shouldn't match Oasis
+	desiredEventName = "Oasis"
+	actualEventName = "Oasish"
 
-	// Harry Potter
-	filteredListings, err = listings.Filter(Filter{
-		Event: harryPotterFilter,
-	})
-	require.NoError(t, err)
-	require.Len(t, filteredListings, 1)
-	require.Equal(t, harryPotter, filteredListings[0].Event.Name)
+	predicate = EventNamePredicate(desiredEventName, 0.9)
+	listing = TicketListing{Event: Event{Name: actualEventName}}
 
-	// The Who
-	filteredListings, err = listings.Filter(Filter{
-		Event: theWhoFilter,
-	})
-	require.NoError(t, err)
-	require.Empty(t, filteredListings)
+	match = predicate(listing)
+	require.False(t, match)
+
+	// The The shouldn't match the Who
+	desiredEventName = "The Who"
+	actualEventName = "The The"
+
+	predicate = EventNamePredicate(desiredEventName, 0.9)
+	listing = TicketListing{Event: Event{Name: actualEventName}}
+
+	match = predicate(listing)
+	require.False(t, match)
 }
 
-func TestFilterCreatedAfter(t *testing.T) {
-	event := Event{Name: "test"}
+func TestCreatedAfterPredicate(t *testing.T) {
 	currentTime := time.Now()
-	listings := TicketListings{
-		{
-			Event:     event,
-			CreatedAt: UnixTime{currentTime.Add(-1 * time.Minute)},
-		},
-		{
-			Event:     event,
-			CreatedAt: UnixTime{currentTime.Add(-2 * time.Minute)},
-		},
-		{
-			Event:     event,
-			CreatedAt: UnixTime{currentTime.Add(-4 * time.Minute)},
-		},
-		{
-			Event:     event,
-			CreatedAt: UnixTime{currentTime.Add(-5 * time.Minute)},
-		},
-	}
 
-	filteredListings, err := listings.Filter(Filter{
-		Event:        event.Name,
-		CreatedAfter: currentTime.Add(-3 * time.Minute),
-	})
-	require.NoError(t, err)
-	require.Equal(t, listings[0:2], filteredListings)
+	// Should match (created after 3 minutes ago)
+	createdAfterTime := currentTime.Add(-3 * time.Minute)
+	actualCreatedTime := currentTime.Add(-1 * time.Minute)
+	predicate := CreatedAfterPredicate(createdAfterTime)
+	listing := TicketListing{
+		Event:     Event{Name: "test"},
+		CreatedAt: UnixTime{actualCreatedTime},
+	}
+	match := predicate(listing)
+	require.True(t, match)
+
+	createdAfterTime = currentTime.Add(-3 * time.Minute)
+	actualCreatedTime = currentTime.Add(-2 * time.Minute)
+	predicate = CreatedAfterPredicate(createdAfterTime)
+	listing = TicketListing{
+		Event:     Event{Name: "test"},
+		CreatedAt: UnixTime{actualCreatedTime},
+	}
+	match = predicate(listing)
+	require.True(t, match)
+
+	// Should not match (created before 3 minutes ago)
+	createdAfterTime = currentTime.Add(-3 * time.Minute)
+	actualCreatedTime = currentTime.Add(-4 * time.Minute)
+	predicate = CreatedAfterPredicate(createdAfterTime)
+	listing = TicketListing{
+		Event:     Event{Name: "test"},
+		CreatedAt: UnixTime{actualCreatedTime},
+	}
+	match = predicate(listing)
+	require.False(t, match)
 }
 
 func TestSubstringSimilarity(t *testing.T) {
