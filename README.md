@@ -16,7 +16,7 @@ Powers (the similarly creatively named)
 - [Getting an API Key](#getting-an-api-key)
 - [Example Usage](#example-usage)
 - [How does the event name matching/similarity work?](#how-does-the-event-name-matchingsimilarity-work)
-	- [Normalization](#normalization)
+  - [Normalization](#normalization)
 - [Why the name twigots?](#why-the-name-twigots)
 
 ## Installation- [Installation](#installation)
@@ -55,13 +55,17 @@ import (
 func main() {
 	apiKey := "my_api_key"
 
+	// Create twickets client (using api key)
+	client, err := twigots.NewClient(apiKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Fetch ticket listings
-	client := twigots.NewClient() // Or use a custom http client
 	listings, err := client.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			// Required
-			APIKey:  apiKey,
 			Country: twigots.CountryUnitedKingdom, // Only UK is supported at the moment
 			// Optional. See all options in godoc
 			CreatedBefore: time.Now(),
