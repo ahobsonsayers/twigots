@@ -37,6 +37,11 @@ This API key is not provided here due to liability concerns, but it appears to b
 
 ## Example Usage
 
+> [!Warning]
+> Although this package is functional and ready for use, it is still a work in progress and is subject to change without notice - the API and usage may be modified at any time.
+>
+> Use with caution and check for updates regularly.
+
 Example can be seen in [`example/main.go`](example/main.go) or below:
 
 ```go
@@ -55,13 +60,17 @@ import (
 func main() {
 	apiKey := "my_api_key"
 
+	// Create twickets client (using api key)
+	client, err := twigots.NewClient(apiKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Fetch ticket listings
-	client := twigots.NewClient() // Or use a custom http client
 	listings, err := client.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			// Required
-			APIKey:  apiKey,
 			Country: twigots.CountryUnitedKingdom, // Only UK is supported at the moment
 			// Optional. See all options in godoc
 			CreatedBefore: time.Now(),

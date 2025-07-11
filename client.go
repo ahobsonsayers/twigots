@@ -14,6 +14,7 @@ import (
 
 type Client struct {
 	client *req.Client
+	apiKey string
 }
 
 func (c *Client) Client() *http.Client {
@@ -29,7 +30,6 @@ func (c *Client) Client() *http.Client {
 // is met first will stop the fetching of ticket listings.
 type FetchTicketListingsInput struct {
 	// Required fields
-	APIKey  string
 	Country Country
 
 	// Regions for which to fetch ticket listings from.
@@ -80,9 +80,6 @@ func (f *FetchTicketListingsInput) applyDefaults() {
 // Validate the input struct used to get ticket listings.
 // This is used internally to check the input, but can also be used externally.
 func (f FetchTicketListingsInput) Validate() error {
-	if f.APIKey == "" {
-		return errors.New("api key must be set")
-	}
 	if f.Country.Value == "" {
 		return errors.New("country must be set")
 	}
@@ -116,7 +113,7 @@ func (c *Client) FetchTicketListings(
 		earliestTicketTime.After(input.CreatedAfter) {
 
 		feedUrl, err := FeedUrl(FeedUrlInput{
-			APIKey:      input.APIKey,
+			APIKey:      c.apiKey,
 			Country:     input.Country,
 			Regions:     input.Regions,
 			NumListings: input.NumPerRequest,
@@ -172,9 +169,16 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 }
 
 // NewClient creates a new Twickets client
-func NewClient() *Client {
+func NewClient(apiKey string) (*Client, error) {
+	if apiKey == "" {
+		return nil, errors.New("api key must be set")
+	}
+
 	client := req.C().ImpersonateChrome()
-	return &Client{client: client}
+	return &Client{
+		client: client,
+		apiKey: apiKey,
+	}, nil
 }
 
 func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings int) TicketListings {

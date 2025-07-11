@@ -23,11 +23,12 @@ func TestGetLatestTicketListings(t *testing.T) {
 	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
 	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
 
-	twicketsClient := twigots.NewClient()
+	twicketsClient, err := twigots.NewClient(twicketsAPIKey)
+	require.NoError(t, err)
+
 	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
-			APIKey:  twicketsAPIKey,
 			Country: twigots.CountryUnitedKingdom,
 			Regions: []twigots.Region{
 				twigots.RegionLondon,
