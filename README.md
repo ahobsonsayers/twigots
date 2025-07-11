@@ -16,7 +16,7 @@ Powers (the similarly creatively named)
 - [Getting an API Key](#getting-an-api-key)
 - [Example Usage](#example-usage)
 - [How does the event name matching/similarity work?](#how-does-the-event-name-matchingsimilarity-work)
-  - [Normalization](#normalization)
+	- [Normalization](#normalization)
 - [Why the name twigots?](#why-the-name-twigots)
 
 ## Installation- [Installation](#installation)
@@ -36,6 +36,11 @@ To use this tool, you will need a Twickets API key. Although Twickets doesn't pr
 This API key is not provided here due to liability concerns, but it appears to be a fixed, unchanging value.
 
 ## Example Usage
+
+> [!Warning]
+> Although this package is functional and ready for use, it is still a work in progress and is subject to change without notice - the API and usage may be modified at any time.
+>
+> Use with caution and check for updates regularly.
 
 Example can be seen in [`example/main.go`](example/main.go) or below:
 
