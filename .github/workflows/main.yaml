@@ -52,4 +52,5 @@ jobs:
       - name: Run test
         run: task test
         env:
+          CI: true
           TWICKETS_API_KEY: ${{ secrets.TWICKETS_API_KEY }}
