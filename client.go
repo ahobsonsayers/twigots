@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/imroc/req/v3"
 	"github.com/k3a/html2text"
 )
@@ -106,11 +107,12 @@ func (c *Client) FetchTicketListings(
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
-	// Iterate through feeds until have equal to or more ticket listings than desired
+	// Iterate through feeds until have equal/more listings than number desired
+	// or listings creation time is before the created after input
 	ticketListings := make(TicketListings, 0, input.MaxNumber)
-	earliestTicketTime := input.CreatedBefore
-	for (input.MaxNumber < 0 || len(ticketListings) < input.MaxNumber) &&
-		earliestTicketTime.After(input.CreatedAfter) {
+	ticketListingIds := mapset.NewSetWithSize[string](input.MaxNumber)
+	earliestTicketTime := input.CreatedAfter
+	for input.MaxNumber < 0 || len(ticketListings) < input.MaxNumber {
 
 		feedUrl, err := FeedUrl(FeedUrlInput{
 			APIKey:      c.apiKey,
@@ -123,21 +125,43 @@ func (c *Client) FetchTicketListings(
 			return nil, fmt.Errorf("failed to get feed url: %w", err)
 		}
 
-		feedTicketListings, err := c.FetchTicketListingsByFeedUrl(ctx, feedUrl)
+		feedListings, err := c.FetchTicketListingsByFeedUrl(ctx, feedUrl)
 		if err != nil {
 			return nil, err
 		}
-		if len(feedTicketListings) == 0 {
+		if len(feedListings) == 0 {
 			return nil, errors.New("no tickets returned")
 		}
 
-		ticketListings = append(ticketListings, feedTicketListings...)
-		earliestTicketTime = feedTicketListings[len(feedTicketListings)-1].CreatedAt.Time
+		ticketCreatedBeforeCreatedAfterInput := false
+		for _, feedListing := range feedListings {
+			// Ignore duplicates
+			if ticketListingIds.Contains(feedListing.Id) {
+				continue
+			}
+
+			ticketListings = append(ticketListings, feedListing)
+			ticketListingIds.Add(feedListing.Id)
+			if feedListing.CreatedAt.Time.Before(earliestTicketTime) {
+
+				// Break ticket was created before earliest allowed time,
+				if feedListing.CreatedAt.Time.Before(input.CreatedAfter) {
+					ticketCreatedBeforeCreatedAfterInput = true
+					break
+				}
+
+				earliestTicketTime = feedListing.CreatedAt.Time
+			}
+		}
+
+		if ticketCreatedBeforeCreatedAfterInput {
+			break
+		}
+
 	}
 
-	// Only return ticket listings requested
+	// Only return up to the max number of listings
 	ticketListings = sliceToMaxNumTicketListings(ticketListings, input.MaxNumber)
-	ticketListings = filterToCreatedAfter(ticketListings, input.CreatedAfter)
 
 	return ticketListings, nil
 }
@@ -186,14 +210,4 @@ func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings i
 		listings = listings[:maxNumTicketListings]
 	}
 	return listings
-}
-
-func filterToCreatedAfter(listings TicketListings, createdAfter time.Time) TicketListings {
-	filteredListings := make(TicketListings, 0, len(listings))
-	for _, listing := range listings {
-		if listing.CreatedAt.Time.After(createdAfter) {
-			filteredListings = append(filteredListings, listing)
-		}
-	}
-	return filteredListings
 }
