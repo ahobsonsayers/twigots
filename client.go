@@ -107,9 +107,9 @@ func (c *Client) FetchTicketListings(
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
-	ticketListings := make(TicketListings, 0, input.MaxNumber)
+	earliestTicketTime := input.CreatedBefore
 	ticketListingIds := mapset.NewSetWithSize[string](input.MaxNumber)
-	earliestTicketTime := input.CreatedAfter
+	ticketListings := make(TicketListings, 0, input.MaxNumber)
 
 	// Iterate through feeds until have equal/more listings than number desired
 	// or listings creation time is before the created after input
@@ -142,18 +142,20 @@ func (c *Client) FetchTicketListings(
 				continue
 			}
 
-			ticketListings = append(ticketListings, feedListing)
-			ticketListingIds.Add(feedListing.Id)
-
+			// If ticker was created before the current earliest listing creation time
+			// Break if the listing creation time is before the created after input.
+			// Otherwise update earliest ticket time
 			if feedListing.CreatedAt.Time.Before(earliestTicketTime) {
-				earliestTicketTime = feedListing.CreatedAt.Time
-
-				// Check if the feed listing's creation time is before the created after input.
-				if earliestTicketTime.Before(input.CreatedAfter) {
+				if feedListing.CreatedAt.Time.Before(input.CreatedAfter) {
 					ticketCreatedBeforeCreatedAfterInput = true
 					break
 				}
+				earliestTicketTime = feedListing.CreatedAt.Time
 			}
+
+			// Update ticket listings
+			ticketListingIds.Add(feedListing.Id)
+			ticketListings = append(ticketListings, feedListing)
 		}
 
 		// Break ff a ticket was created before the created after input.
