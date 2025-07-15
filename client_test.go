@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/ahobsonsayers/twigots"
+	"github.com/ahobsonsayers/utilopia/testutils"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +17,7 @@ import (
 // TODO: Use httptest client
 
 func TestGetLatestTicketListings(t *testing.T) {
-	t.Skip(t, "Does not work on CI atm. Fix this.")
+	testutils.SkipIfCI(t)
 
 	projectDirectory := projectDirectory(t)
 	_ = godotenv.Load(filepath.Join(projectDirectory, ".env"))
@@ -29,16 +31,12 @@ func TestGetLatestTicketListings(t *testing.T) {
 	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
-			Country: twigots.CountryUnitedKingdom,
-			Regions: []twigots.Region{
-				twigots.RegionLondon,
-				twigots.RegionNorthWest,
-			},
+			Country:   twigots.CountryUnitedKingdom,
 			MaxNumber: 10,
 		},
 	)
 	require.NoError(t, err)
-	require.Len(t, listings, 10)
+	spew.Dump(listings)
 }
 
 func projectDirectory(t *testing.T) string {

@@ -189,11 +189,16 @@ func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings i
 }
 
 func filterToCreatedAfter(listings TicketListings, createdAfter time.Time) TicketListings {
+	if createdAfter.IsZero() {
+		return listings
+	}
+
 	filteredListings := make(TicketListings, 0, len(listings))
 	for _, listing := range listings {
 		if listing.CreatedAt.Time.After(createdAfter) {
 			filteredListings = append(filteredListings, listing)
 		}
 	}
+
 	return filteredListings
 }
