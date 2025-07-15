@@ -12,14 +12,14 @@ Includes utilities to help filter the ticket listings and find the ones you want
 Powers (the similarly creatively named)
 [twitchets](https://github.com/ahobsonsayers/twitchets), a tool to watch for event ticket listings on Twickets and notify you so you can snap them up! 🫰
 
-- [Installation- Installation](#installation--installation)
+- [Installation](#installation)
 - [Getting an API Key](#getting-an-api-key)
 - [Example Usage](#example-usage)
 - [How does the event name matching/similarity work?](#how-does-the-event-name-matchingsimilarity-work)
 	- [Normalization](#normalization)
 - [Why the name twigots?](#why-the-name-twigots)
 
-## Installation- [Installation](#installation)
+## Installation
 
 ```bash
 go get -u github.com/ahobsonsayers/twigots
