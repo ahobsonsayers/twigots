@@ -7,6 +7,7 @@ toolchain go1.24.0
 require (
 	github.com/ahobsonsayers/utilopia v0.2.1
 	github.com/davecgh/go-spew v1.1.1
+	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/hbollon/go-edlib v1.6.0
 	github.com/imroc/req/v3 v3.52.2
 	github.com/joho/godotenv v1.5.1

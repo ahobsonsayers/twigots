@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ahobsonsayers/twigots"
 	"github.com/ahobsonsayers/utilopia/testutils"
@@ -31,8 +32,10 @@ func TestGetLatestTicketListings(t *testing.T) {
 	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
-			Country:   twigots.CountryUnitedKingdom,
-			MaxNumber: 10,
+			Country:       twigots.CountryUnitedKingdom,
+			MaxNumber:     10,
+			CreatedBefore: time.Now(),
+			CreatedAfter:  time.Now().Add(-23 * time.Minute),
 		},
 	)
 	require.NoError(t, err)
