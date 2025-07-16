@@ -151,6 +151,8 @@ Actual event: Miss Americana: A Tribute to Taylor Swift
 Similarity score: 1 <- This is a exact match, but it is probably not the event we want
 ```
 
+For a more in depth explanation of the string matching algorithm, [see this PR](https://github.com/ahobsonsayers/twigots/pull/2).
+
 ### Normalization
 
 To help with matching, both the desired and actual event names are normalized before similarity is calculated.
