@@ -17,13 +17,19 @@ type Proxy struct {
 }
 
 // NewProxy creates a new Proxy instance with the given host, port, user, and password.
-func NewProxy(host string, port int, user, password string) *Proxy {
+func NewProxy(host string, port int, user, password string) (*Proxy, error) {
+	if host == "" {
+		return nil, errors.New("host is required")
+	}
+	if port <= 0 {
+		return nil, errors.New("port must be positive")
+	}
 	return &Proxy{
 		Host:     host,
 		Port:     port,
 		User:     user,
 		Password: password,
-	}
+	}, nil
 }
 
 // GenerateProxyList creates a list of Proxy instances from a list of proxy URLs.

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/ahobsonsayers/twigots"
@@ -13,6 +14,42 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
 )
+
+func TestClientWithProxy(t *testing.T) {
+	testutils.SkipIfCI(t)
+
+	projectDirectory := projectDirectory(t)
+	_ = godotenv.Load(filepath.Join(projectDirectory, ".env"))
+
+	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
+	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
+	proxyUser := os.Getenv("PROXY_USER")
+	require.NotEmpty(t, proxyUser, "PROXY_USER is not set")
+	proxyPassword := os.Getenv("PROXY_PASSWORD")
+	require.NotEmpty(t, proxyPassword, "PROXY_PASSWORD is not set")
+	proxyHost := os.Getenv("PROXY_HOST")
+	require.NotEmpty(t, proxyHost, "PROXY_HOST is not set")
+	proxyPort := os.Getenv("PROXY_PORT")
+	require.NotEmpty(t, proxyPort, "PROXY_PORT is not set")
+	proxyPortInt, err := strconv.Atoi(proxyPort)
+	require.NoError(t, err, "failed to convert PROXY_PORT to int")
+	proxy, err := twigots.NewProxy(proxyHost, proxyPortInt, proxyUser, proxyPassword)
+	require.NoError(t, err)
+	require.NoError(t, err)
+
+	twicketsClient, err := twigots.NewClient(twicketsAPIKey, []twigots.Proxy{*proxy})
+	require.NoError(t, err)
+
+	listings, err := twicketsClient.FetchTicketListings(
+		context.Background(),
+		twigots.FetchTicketListingsInput{
+			Country:   twigots.CountryUnitedKingdom,
+			MaxNumber: 10,
+		},
+	)
+	require.NoError(t, err)
+	spew.Dump(listings)
+}
 
 // TODO: Use httptest client
 
@@ -25,7 +62,7 @@ func TestGetLatestTicketListings(t *testing.T) {
 	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
 	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
 
-	twicketsClient, err := twigots.NewClient(twicketsAPIKey)
+	twicketsClient, err := twigots.NewClient(twicketsAPIKey, nil)
 	require.NoError(t, err)
 
 	listings, err := twicketsClient.FetchTicketListings(

@@ -14,7 +14,7 @@ func main() {
 	apiKey := "my_api_key"
 
 	// Create twickets client (using api key)
-	client, err := twigots.NewClient(apiKey)
+	client, err := twigots.NewClient(apiKey, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

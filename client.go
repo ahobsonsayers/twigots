@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"sync"
 	"time"
 
 	"github.com/imroc/req/v3"
@@ -13,8 +15,11 @@ import (
 )
 
 type Client struct {
-	client *req.Client
-	apiKey string
+	client    *req.Client
+	apiKey    string
+	proxies   []Proxy
+	nextProxy int
+	mutex     *sync.Mutex
 }
 
 func (c *Client) Client() *http.Client {
@@ -106,6 +111,14 @@ func (c *Client) FetchTicketListings(
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
+	if len(c.proxies) > 0 {
+		proxyUrl, err := c.nextProxyUrl()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get next proxy URL: %w", err)
+		}
+		c.client.SetProxyURL(proxyUrl.String())
+	}
+
 	// Iterate through feeds until have equal to or more ticket listings than desired
 	ticketListings := make(TicketListings, 0, input.MaxNumber)
 	earliestTicketTime := input.CreatedBefore
@@ -169,16 +182,29 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 }
 
 // NewClient creates a new Twickets client
-func NewClient(apiKey string) (*Client, error) {
+func NewClient(apiKey string, proxies []Proxy) (*Client, error) {
 	if apiKey == "" {
 		return nil, errors.New("api key must be set")
 	}
 
 	client := req.C().ImpersonateChrome()
-	return &Client{
-		client: client,
-		apiKey: apiKey,
-	}, nil
+
+	c := &Client{
+		client:  client,
+		apiKey:  apiKey,
+		proxies: proxies,
+		mutex:   &sync.Mutex{},
+	}
+
+	return c, nil
+}
+
+func (c *Client) nextProxyUrl() (*url.URL, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	proxy := c.proxies[c.nextProxy]
+	c.nextProxy = (c.nextProxy + 1) % len(c.proxies)
+	return proxy.URL()
 }
 
 func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings int) TicketListings {
