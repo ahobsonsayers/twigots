@@ -196,7 +196,7 @@ func TestGenerateProxyList(t *testing.T) {
 		{
 			name: "Valid Proxy List",
 			args: args{
-				proxyHosts: []string{"socks5://localhost:8080", "socks5://example.com:9090"},
+				proxyHosts: []string{"localhost:8080", "example.com:9090"},
 				user:       "user",
 				password:   "password",
 			},

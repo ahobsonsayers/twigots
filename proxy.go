@@ -36,6 +36,9 @@ func NewProxy(host string, port int, user, password string) (*Proxy, error) {
 func GenerateProxyList(proxyHosts []string, user, password string) ([]Proxy, error) {
 	var proxyList []Proxy
 	for _, p := range proxyHosts {
+		if !strings.Contains(p, "://") {
+			p = "socks5://" + p
+		}
 		parsedUrl, err := url.Parse(p)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse proxy URL '%s': %w", p, err)

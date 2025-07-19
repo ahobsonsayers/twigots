@@ -17,7 +17,7 @@ import (
 type Client struct {
 	client    *req.Client
 	apiKey    string
-	proxies   []Proxy
+	proxies   *[]Proxy
 	nextProxy int
 	mutex     *sync.Mutex
 }
@@ -106,20 +106,14 @@ func (c *Client) FetchTicketListings(
 	input FetchTicketListingsInput,
 ) (TicketListings, error) {
 	input.applyDefaults()
-	err := input.Validate()
-	if err != nil {
+	if err := input.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
 
-	if len(c.proxies) > 0 {
-		proxyUrl, err := c.nextProxyUrl()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get next proxy URL: %w", err)
-		}
-		c.client.SetProxyURL(proxyUrl.String())
+	if err := c.setupProxy(); err != nil {
+		return nil, err
 	}
 
-	// Iterate through feeds until have equal to or more ticket listings than desired
 	ticketListings := make(TicketListings, 0, input.MaxNumber)
 	earliestTicketTime := input.CreatedBefore
 	for (input.MaxNumber < 0 || len(ticketListings) < input.MaxNumber) &&
@@ -148,11 +142,22 @@ func (c *Client) FetchTicketListings(
 		earliestTicketTime = feedTicketListings[len(feedTicketListings)-1].CreatedAt.Time
 	}
 
-	// Only return ticket listings requested
 	ticketListings = sliceToMaxNumTicketListings(ticketListings, input.MaxNumber)
 	ticketListings = filterToCreatedAfter(ticketListings, input.CreatedAfter)
 
 	return ticketListings, nil
+}
+
+// setupProxy sets up the proxy for the client if proxies are configured.
+func (c *Client) setupProxy() error {
+	if c.proxies != nil && len(*c.proxies) > 0 {
+		proxyUrl, err := c.nextProxyUrl()
+		if err != nil {
+			return fmt.Errorf("failed to get next proxy URL: %w", err)
+		}
+		c.client.SetProxyURL(proxyUrl.String())
+	}
+	return nil
 }
 
 // FetchTicketListings gets ticket listings using the specified feel url.
@@ -182,7 +187,7 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 }
 
 // NewClient creates a new Twickets client
-func NewClient(apiKey string, proxies []Proxy) (*Client, error) {
+func NewClient(apiKey string) (*Client, error) {
 	if apiKey == "" {
 		return nil, errors.New("api key must be set")
 	}
@@ -192,18 +197,28 @@ func NewClient(apiKey string, proxies []Proxy) (*Client, error) {
 	c := &Client{
 		client:  client,
 		apiKey:  apiKey,
-		proxies: proxies,
+		proxies: nil,
 		mutex:   &sync.Mutex{},
 	}
 
 	return c, nil
 }
 
+// NewClientWithProxies creates a new Twickets client with a list of proxies.
+func NewClientWithProxies(apiKey string, proxies *[]Proxy) (*Client, error) {
+	c, err := NewClient(apiKey)
+	if err != nil {
+		return nil, err
+	}
+	c.proxies = proxies
+	return c, nil
+}
+
 func (c *Client) nextProxyUrl() (*url.URL, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	proxy := c.proxies[c.nextProxy]
-	c.nextProxy = (c.nextProxy + 1) % len(c.proxies)
+	proxy := (*c.proxies)[c.nextProxy]
+	c.nextProxy = (c.nextProxy + 1) % len(*c.proxies)
 	return proxy.URL()
 }
 

@@ -37,7 +37,7 @@ func TestClientWithProxy(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, err)
 
-	twicketsClient, err := twigots.NewClient(twicketsAPIKey, []twigots.Proxy{*proxy})
+	twicketsClient, err := twigots.NewClientWithProxies(twicketsAPIKey, &[]twigots.Proxy{*proxy})
 	require.NoError(t, err)
 
 	listings, err := twicketsClient.FetchTicketListings(
@@ -62,7 +62,7 @@ func TestGetLatestTicketListings(t *testing.T) {
 	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
 	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
 
-	twicketsClient, err := twigots.NewClient(twicketsAPIKey, nil)
+	twicketsClient, err := twigots.NewClient(twicketsAPIKey)
 	require.NoError(t, err)
 
 	listings, err := twicketsClient.FetchTicketListings(
