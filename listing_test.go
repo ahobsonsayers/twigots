@@ -70,7 +70,7 @@ func TestTicketListingDiscountString(t *testing.T) {
 
 func testTicketListings(t *testing.T) twigots.TicketListings {
 	projectDirectory := testutils.ProjectDirectory(t)
-	feedJsonFilePath := filepath.Join(projectDirectory, "test/data/fullFeedResponse.json")
+	feedJsonFilePath := filepath.Join(projectDirectory, "test", "data", "fullFeedResponse.json")
 
 	feedJsonFile, err := os.Open(feedJsonFilePath)
 	require.NoError(t, err)

@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	testApiKey      = "test"
+	testAPIKey      = "test"
 	testCountry     = twigots.CountryUnitedKingdom
 	testNumListings = 10 // Num listings per request - this is the default of 10
 	testBeforeTime  = time.Date(2025, 1, 1, 12, 1, 0, 0, time.UTC)
@@ -66,7 +66,7 @@ func TestGetLatestTicketListingsReal(t *testing.T) {
 
 func TestGetLatestTicketListings(t *testing.T) {
 	// Create client
-	twicketsClient, err := twigots.NewClient(testApiKey)
+	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
 	// Setup mock
@@ -93,7 +93,7 @@ func TestGetLatestTicketListings(t *testing.T) {
 
 func TestGetLatestTicketListingsMaxNumber(t *testing.T) {
 	// Create client
-	twicketsClient, err := twigots.NewClient(testApiKey)
+	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
 	// Setup mock
@@ -121,7 +121,7 @@ func TestGetLatestTicketListingsMaxNumber(t *testing.T) {
 
 func TestGetLatestTicketListingsCreateAfter(t *testing.T) {
 	// Create client
-	twicketsClient, err := twigots.NewClient(testApiKey)
+	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
 	// Setup mock
@@ -150,7 +150,7 @@ func TestGetLatestTicketListingsCreateAfter(t *testing.T) {
 func getMockUrl() string {
 	return fmt.Sprintf(
 		"https://www.twickets.live/services/catalogue?api_key=%s&count=%d&maxTime=%d&q=countryCode=%s",
-		testApiKey, testNumListings, testBeforeTime.UnixMilli(), testCountry.Value,
+		testAPIKey, testNumListings, testBeforeTime.UnixMilli(), testCountry.Value,
 	)
 }
 
