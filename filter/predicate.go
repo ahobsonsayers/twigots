@@ -82,7 +82,7 @@ func CreatedBefore(createdBefore time.Time) TicketListingPredicate {
 	}
 
 	return func(listing twigots.TicketListing) bool {
-		return listing.CreatedAt.Time.Before(createdBefore)
+		return listing.CreatedAt.Before(createdBefore)
 	}
 }
 
@@ -96,7 +96,7 @@ func CreatedAfter(createdAfter time.Time) TicketListingPredicate {
 	}
 
 	return func(listing twigots.TicketListing) bool {
-		return listing.CreatedAt.Time.After(createdAfter)
+		return listing.CreatedAt.After(createdAfter)
 	}
 }
 

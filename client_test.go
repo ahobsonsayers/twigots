@@ -2,24 +2,46 @@ package twigots_test
 
 import (
 	"context"
-	"io"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ahobsonsayers/twigots"
 	"github.com/ahobsonsayers/utilopia/testutils"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/jarcoal/httpmock"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
+	"muzzammil.xyz/jsonc"
 )
 
-// TODO: Use httptest client
+var (
+	testAPIKey      = "test"
+	testCountry     = twigots.CountryUnitedKingdom
+	testNumListings = 10 // Num listings per request - this is the default of 10
+	testBeforeTime  = time.Date(2025, 1, 1, 12, 1, 0, 0, time.UTC)
 
-func TestGetLatestTicketListings(t *testing.T) {
+	testBandNames = []string{
+		"Coldplay",
+		"The 1975",
+		"Arctic Monkeys",
+		"The Killers",
+		"Imagine Dragons",
+		"Panic! At The Disco",
+		"Fall Out Boy",
+		"Green Day",
+		"Sum 41",
+		"Blink-182",
+	}
+)
+
+func TestGetLatestTicketListingsReal(t *testing.T) {
 	testutils.SkipIfCI(t)
 
-	projectDirectory := projectDirectory(t)
+	projectDirectory := testutils.ProjectDirectory(t)
 	_ = godotenv.Load(filepath.Join(projectDirectory, ".env"))
 
 	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
@@ -28,47 +50,124 @@ func TestGetLatestTicketListings(t *testing.T) {
 	twicketsClient, err := twigots.NewClient(twicketsAPIKey)
 	require.NoError(t, err)
 
+	// Fetch ticket listings
 	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
-			Country:   twigots.CountryUnitedKingdom,
-			MaxNumber: 10,
+			Country:       twigots.CountryUnitedKingdom,
+			MaxNumber:     25,
+			CreatedBefore: time.Now(),
 		},
 	)
 	require.NoError(t, err)
 	spew.Dump(listings)
+	require.Len(t, listings, 25)
 }
 
-func projectDirectory(t *testing.T) string {
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		require.NoError(t, err, "failed to get path of current working directory")
-	}
+func TestGetLatestTicketListings(t *testing.T) {
+	// Create client
+	twicketsClient, err := twigots.NewClient(testAPIKey)
+	require.NoError(t, err)
 
-	directory := workingDirectory
-	for directory != "/" {
-		_, err := os.Stat(filepath.Join(directory, "go.mod"))
-		if err == nil {
-			break
-		}
-		directory = filepath.Dir(directory)
-	}
-	require.NotEqual(t, "failed find project directory", directory, "/")
+	// Setup mock
+	mockUrl := getMockUrl()
+	mockResponder := getMockResponder(t)
+	httpmock.ActivateNonDefault(twicketsClient.Client())
+	httpmock.RegisterResponder("GET", mockUrl, mockResponder)
 
-	return directory
+	// Fetch ticket listings
+	// This should return all 10 in the test feed response
+	listings, err := twicketsClient.FetchTicketListings(
+		context.Background(),
+		twigots.FetchTicketListingsInput{
+			Country:       twigots.CountryUnitedKingdom,
+			MaxNumber:     10, // 10 is the default
+			CreatedBefore: testBeforeTime,
+		},
+	)
+	require.NoError(t, err)
+	for i := 0; i < 5; i++ {
+		require.Equal(t, testBandNames[i], listings[i].Event.Name)
+	}
 }
 
-func testTicketListings(t *testing.T) twigots.TicketListings {
-	projectDirectory := projectDirectory(t)
-	feedJsonFilePath := filepath.Join(projectDirectory, "testdata", "feed.json")
-
-	feedJsonFile, err := os.Open(feedJsonFilePath)
-	require.NoError(t, err)
-	feedJson, err := io.ReadAll(feedJsonFile)
+func TestGetLatestTicketListingsMaxNumber(t *testing.T) {
+	// Create client
+	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
-	tickets, err := twigots.UnmarshalTwicketsFeedJson(feedJson)
+	// Setup mock
+	mockUrl := getMockUrl()
+	mockResponder := getMockResponder(t)
+	httpmock.ActivateNonDefault(twicketsClient.Client())
+	httpmock.RegisterResponder("GET", mockUrl, mockResponder)
+
+	// Fetch ticket listings
+	// This should return the first 5 in the test feed response
+	listings, err := twicketsClient.FetchTicketListings(
+		context.Background(),
+		twigots.FetchTicketListingsInput{
+			Country:       twigots.CountryUnitedKingdom,
+			MaxNumber:     5,
+			CreatedBefore: testBeforeTime,
+		},
+	)
+	require.NoError(t, err)
+	require.Len(t, listings, 5)
+	for i := 0; i < 5; i++ {
+		require.Equal(t, testBandNames[i], listings[i].Event.Name)
+	}
+}
+
+func TestGetLatestTicketListingsCreateAfter(t *testing.T) {
+	// Create client
+	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
-	return tickets
+	// Setup mock
+	mockUrl := getMockUrl()
+	mockResponder := getMockResponder(t)
+	httpmock.ActivateNonDefault(twicketsClient.Client())
+	httpmock.RegisterResponder("GET", mockUrl, mockResponder)
+
+	// Fetch ticket listings
+	// This should return the first 5 in the test feed response
+	listings, err := twicketsClient.FetchTicketListings(
+		context.Background(),
+		twigots.FetchTicketListingsInput{
+			Country:       twigots.CountryUnitedKingdom,
+			CreatedBefore: testBeforeTime,
+			CreatedAfter:  testBeforeTime.Add(-5 * 5 * time.Minute),
+		},
+	)
+	require.NoError(t, err)
+	require.Len(t, listings, 5)
+	for i := 0; i < 5; i++ {
+		require.Equal(t, testBandNames[i], listings[i].Event.Name)
+	}
+}
+
+func getMockUrl() string {
+	return fmt.Sprintf(
+		"https://www.twickets.live/services/catalogue?api_key=%s&count=%d&maxTime=%d&q=countryCode=%s",
+		testAPIKey, testNumListings, testBeforeTime.UnixMilli(), testCountry.Value,
+	)
+}
+
+func getMockResponder(t *testing.T) httpmock.Responder {
+	return func(_ *http.Request) (*http.Response, error) {
+		// Read test feed response jsonc
+		testFeedResponsePath := testutils.ProjectDirectoryJoin(t, "test/data/testFeedResponse.jsonc")
+		testFeedResponseJsonc, err := os.ReadFile(testFeedResponsePath)
+		require.NoError(t, err)
+
+		// Convert jsonc to json
+		testFeedResponseJson := jsonc.ToJSON(testFeedResponseJsonc)
+
+		// Create a new HTTP response with the JSON data
+		response := httpmock.NewBytesResponse(http.StatusOK, testFeedResponseJson)
+		response.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+		return response, nil
+	}
 }
