@@ -145,8 +145,8 @@ func (c *Client) FetchTicketListings(
 			// If ticker was created before the current earliest listing creation time
 			// Break if the listing creation time is before the created after input.
 			// Otherwise update earliest ticket time
-			if feedListing.CreatedAt.Time.Before(earliestTicketTime) {
-				if feedListing.CreatedAt.Time.Before(input.CreatedAfter) {
+			if feedListing.CreatedAt.Before(earliestTicketTime) {
+				if feedListing.CreatedAt.Before(input.CreatedAfter) {
 					ticketCreatedBeforeCreatedAfterInput = true
 					break
 				}
