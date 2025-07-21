@@ -9,12 +9,14 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/hbollon/go-edlib v1.6.0
 	github.com/imroc/req/v3 v3.52.2
+	github.com/jarcoal/httpmock v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/k3a/html2text v1.2.1
 	github.com/orsinium-labs/enum v1.4.0
 	github.com/samber/lo v1.47.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/text v0.24.0
+	muzzammil.xyz/jsonc v1.0.0
 )
 
 require (
