@@ -15,7 +15,6 @@ require (
 	github.com/samber/lo v1.47.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/text v0.24.0
-	muzzammil.xyz/jsonc v1.0.0
 )
 
 require (
