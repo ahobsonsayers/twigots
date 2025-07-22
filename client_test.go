@@ -2,10 +2,13 @@ package twigots_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -15,28 +18,22 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
-	"muzzammil.xyz/jsonc"
 )
 
-var (
-	testAPIKey      = "test"
-	testCountry     = twigots.CountryUnitedKingdom
-	testNumListings = 10 // Num listings per request - this is the default of 10
-	testBeforeTime  = time.Date(2025, 1, 1, 12, 1, 0, 0, time.UTC)
+const testAPIKey = "test"
 
-	testBandNames = []string{
-		"Coldplay",
-		"The 1975",
-		"Arctic Monkeys",
-		"The Killers",
-		"Imagine Dragons",
-		"Panic! At The Disco",
-		"Fall Out Boy",
-		"Green Day",
-		"Sum 41",
-		"Blink-182",
-	}
-)
+var testEventNames = []string{
+	"Coldplay",
+	"The 1975",
+	"Arctic Monkeys",
+	"The Killers",
+	"Imagine Dragons",
+	"Panic! At The Disco",
+	"Fall Out Boy",
+	"Green Day",
+	"Sum 41",
+	"Blink-182",
+}
 
 func TestGetLatestTicketListingsReal(t *testing.T) {
 	testutils.SkipIfCI(t)
@@ -65,15 +62,16 @@ func TestGetLatestTicketListingsReal(t *testing.T) {
 }
 
 func TestGetLatestTicketListings(t *testing.T) {
+	testTime := time.Now()
+
 	// Create client
 	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
 	// Setup mock
-	mockUrl := getMockUrl()
-	mockResponder := getMockResponder(t)
+	url, responder := getMockUrlAndResponder(t, testEventNames, testTime, time.Minute)
 	httpmock.ActivateNonDefault(twicketsClient.Client())
-	httpmock.RegisterResponder("GET", mockUrl, mockResponder)
+	httpmock.RegisterResponder("GET", url, responder)
 
 	// Fetch ticket listings
 	// This should return all 10 in the test feed response
@@ -82,25 +80,26 @@ func TestGetLatestTicketListings(t *testing.T) {
 		twigots.FetchTicketListingsInput{
 			Country:       twigots.CountryUnitedKingdom,
 			MaxNumber:     10, // 10 is the default
-			CreatedBefore: testBeforeTime,
+			CreatedBefore: testTime,
 		},
 	)
 	require.NoError(t, err)
 	for i := 0; i < 5; i++ {
-		require.Equal(t, testBandNames[i], listings[i].Event.Name)
+		require.Equal(t, testEventNames[i], listings[i].Event.Name)
 	}
 }
 
 func TestGetLatestTicketListingsMaxNumber(t *testing.T) {
+	testTime := time.Now()
+
 	// Create client
 	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
 	// Setup mock
-	mockUrl := getMockUrl()
-	mockResponder := getMockResponder(t)
+	url, responder := getMockUrlAndResponder(t, testEventNames[0:5], testTime, time.Minute)
 	httpmock.ActivateNonDefault(twicketsClient.Client())
-	httpmock.RegisterResponder("GET", mockUrl, mockResponder)
+	httpmock.RegisterResponder("GET", url, responder)
 
 	// Fetch ticket listings
 	// This should return the first 5 in the test feed response
@@ -109,26 +108,27 @@ func TestGetLatestTicketListingsMaxNumber(t *testing.T) {
 		twigots.FetchTicketListingsInput{
 			Country:       twigots.CountryUnitedKingdom,
 			MaxNumber:     5,
-			CreatedBefore: testBeforeTime,
+			CreatedBefore: testTime,
 		},
 	)
 	require.NoError(t, err)
 	require.Len(t, listings, 5)
 	for i := 0; i < 5; i++ {
-		require.Equal(t, testBandNames[i], listings[i].Event.Name)
+		require.Equal(t, testEventNames[i], listings[i].Event.Name)
 	}
 }
 
-func TestGetLatestTicketListingsCreateAfter(t *testing.T) {
+func TestGetLatestTicketListingsCreatedAfter(t *testing.T) {
+	testTime := time.Now()
+
 	// Create client
 	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
 	// Setup mock
-	mockUrl := getMockUrl()
-	mockResponder := getMockResponder(t)
+	url, responder := getMockUrlAndResponder(t, testEventNames, testTime, time.Minute)
 	httpmock.ActivateNonDefault(twicketsClient.Client())
-	httpmock.RegisterResponder("GET", mockUrl, mockResponder)
+	httpmock.RegisterResponder("GET", url, responder)
 
 	// Fetch ticket listings
 	// This should return the first 5 in the test feed response
@@ -136,38 +136,88 @@ func TestGetLatestTicketListingsCreateAfter(t *testing.T) {
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			Country:       twigots.CountryUnitedKingdom,
-			CreatedBefore: testBeforeTime,
-			CreatedAfter:  testBeforeTime.Add(-5 * 5 * time.Minute),
+			CreatedBefore: testTime,
+			CreatedAfter:  testTime.Add(-5 * time.Minute),
 		},
 	)
 	require.NoError(t, err)
 	require.Len(t, listings, 5)
 	for i := 0; i < 5; i++ {
-		require.Equal(t, testBandNames[i], listings[i].Event.Name)
+		require.Equal(t, testEventNames[i], listings[i].Event.Name)
 	}
 }
 
-func getMockUrl() string {
+// getMockUrlAndResponder returns a mock url and responder for testing purposes.
+// The responder returns events spaced at the specified interval backwards from startTime.
+func getMockUrlAndResponder(
+	t *testing.T,
+	events []string,
+	startTime time.Time,
+	interval time.Duration,
+) (string, httpmock.Responder) {
+	url := getMockUrl(events, startTime)
+
+	responseJson := getMockResponseJson(t, events, startTime, interval)
+
+	responder := func(_ *http.Request) (*http.Response, error) {
+		response := httpmock.NewBytesResponse(http.StatusOK, responseJson)
+		response.Header.Set("Content-Type", "application/json; charset=utf-8")
+		return response, nil
+	}
+
+	return url, responder
+}
+
+func getMockUrl(events []string, startTime time.Time) string {
 	return fmt.Sprintf(
 		"https://www.twickets.live/services/catalogue?api_key=%s&count=%d&maxTime=%d&q=countryCode=%s",
-		testAPIKey, testNumListings, testBeforeTime.UnixMilli(), testCountry.Value,
+		testAPIKey,
+		len(events),
+		startTime.UnixMilli(),
+		twigots.CountryUnitedKingdom.Value,
 	)
 }
 
-func getMockResponder(t *testing.T) httpmock.Responder {
-	return func(_ *http.Request) (*http.Response, error) {
-		// Read test feed response jsonc
-		testFeedResponsePath := testutils.ProjectDirectoryJoin(t, "test/data/testFeedResponse.jsonc")
-		testFeedResponseJsonc, err := os.ReadFile(testFeedResponsePath)
-		require.NoError(t, err)
+func getMockResponseJson(t *testing.T, events []string, startTime time.Time, interval time.Duration) []byte {
+	// Create response.
+	// All uneeded/unused fields have been stripped.
+	// To see the real full feed response, see feelFeedResponse.json
+	var responseListings []any
+	for i, event := range events {
+		id := rand.Int()
+		createdAt := startTime.Add(-interval * time.Duration(i))
 
-		// Convert jsonc to json
-		testFeedResponseJson := jsonc.ToJSON(testFeedResponseJsonc)
+		idString := strconv.Itoa(id)
+		createdAtString := strconv.Itoa(int(createdAt.UnixMilli()))
 
-		// Create a new HTTP response with the JSON data
-		response := httpmock.NewBytesResponse(http.StatusOK, testFeedResponseJson)
-		response.Header.Set("Content-Type", "application/json; charset=utf-8")
+		// Create event listing
+		responseListing := map[string]any{
+			"catalogBlockSummary": map[string]any{
+				"blockId": idString,
+				"created": createdAtString,
+				"event": map[string]any{
+					"id":        idString,
+					"eventName": event,
+				},
+			},
+		}
+		responseListings = append(responseListings, responseListing)
 
-		return response, nil
+		// Add a delisted listing after every second listing for testing
+		if (i+1)%2 == 0 {
+			delistedListing := map[string]any{"catalogBlockSummary": nil}
+			responseListings = append(responseListings, delistedListing)
+		}
 	}
+
+	// Create final response
+	response := map[string]any{
+		"responseData": responseListings,
+	}
+
+	// Marshal response
+	responseJson, err := json.Marshal(response)
+	require.NoError(t, err)
+
+	return responseJson
 }
