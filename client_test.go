@@ -22,17 +22,32 @@ import (
 
 const testAPIKey = "test"
 
-var testEventNames = []string{
-	"Coldplay",
-	"The 1975",
-	"Arctic Monkeys",
-	"The Killers",
-	"Imagine Dragons",
-	"Panic! At The Disco",
-	"Fall Out Boy",
-	"Green Day",
-	"Sum 41",
-	"Blink-182",
+var testEvents = []string{
+    "Adele",
+    "Arctic Monkeys",
+    "Ariana Grande",
+    "Bad Bunny",
+    "Billie Eilish",
+    "Blink-182",
+    "Bruno Mars",
+    "Coldplay",
+    "Doja Cat",
+    "Drake",
+    "Dua Lipa",
+    "Ed Sheeran",
+    "Fall Out Boy",
+    "Green Day",
+    "Harry Styles",
+    "Imagine Dragons",
+    "Justin Bieber",
+    "Olivia Rodrigo",
+    "Panic! At The Disco",
+    "Post Malone",
+    "Sum 41",
+    "Taylor Swift",
+    "The 1975",
+    "The Killers",
+    "The Weeknd",
 }
 
 func TestGetLatestTicketListingsReal(t *testing.T) {
