@@ -49,7 +49,21 @@ func NumTickets(numTickets int) TicketListingPredicate {
 	}
 }
 
-// ListingNumTickets creates a predicate that matches ticket listings with at least the specified discount.
+// MaxTicketPriceInclFee creates a predicate that matches ticket listings with a price incl fee below the specified max.
+//
+// Set maxPrice to <=0 to match any price.
+func MaxTicketPriceInclFee(maxPrice float64) TicketListingPredicate {
+	// If no specific number specified, match any price
+	if maxPrice <= 0 {
+		return alwaysPredicate
+	}
+
+	return func(listing twigots.TicketListing) bool {
+		return listing.TicketPriceInclFee().Number() <= maxPrice
+	}
+}
+
+// MinDiscount creates a predicate that matches ticket listings with a discount above the specified min.
 //
 // Discount is specified as a float, between 0 and 1 (with 0 representing no discount and 1 representing 100% off).
 //
@@ -57,7 +71,7 @@ func NumTickets(numTickets int) TicketListingPredicate {
 //
 // If minDiscount is set to >1, minDiscount will be set to 1 (100% discount only).
 func MinDiscount(minDiscount float64) TicketListingPredicate {
-	// Use no minimum discount if not specified or negative
+	// If no specific number specified, match any discount
 	if minDiscount <= 0 {
 		return alwaysPredicate
 	}
