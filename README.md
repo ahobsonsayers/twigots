@@ -12,14 +12,14 @@ Includes utilities to help filter the ticket listings and find the ones you want
 Powers (the similarly creatively named)
 [twitchets](https://github.com/ahobsonsayers/twitchets), a tool to watch for event ticket listings on Twickets and notify you so you can snap them up! 🫰
 
-- [Installation- Installation](#installation--installation)
+- [Installation](#installation)
 - [Getting an API Key](#getting-an-api-key)
 - [Example Usage](#example-usage)
 - [How does the event name matching/similarity work?](#how-does-the-event-name-matchingsimilarity-work)
 	- [Normalization](#normalization)
 - [Why the name twigots?](#why-the-name-twigots)
 
-## Installation- [Installation](#installation)
+## Installation
 
 ```bash
 go get -u github.com/ahobsonsayers/twigots
@@ -127,16 +127,13 @@ func main() {
 
 ## How does the event name matching/similarity work?
 
-Event name similarity is calculated using the [Smith-Waterman-Gotoh algorithm](https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm). The complexity behind this algorithm does not need to be understood, but for all intents and purposes, it can be thought of as fuzzy substring matching.
+Event name similarity is calculated using a modified [Smith-Waterman-Gotoh algorithm](https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm). The complexity behind this algorithm does not need to be understood, but for all intents and purposes, it can be thought of as fuzzy substring matching.
 
 If the desired event name appears within the actual event name returned by twickets (as a substring), the event similarity will be 1. Equally, if the desired event name does not appear at all, the similarity will be 0.
 
 Setting a required similarity below, but close to 1, will allow for small inconsistencies due to misspelling etc., but can return false positives. We recommend (and default to) a value of `0.9`.
 
 False positives can also occur if your desired event name appears in the actual event name, but the event is not the one you want. This can often happen with things like tribute bands - see the example below.
-
-> [!NOTE]
-> This is actually bidirectional substring matching, so either the desired event name or the actual event name can be the substring. This is important to take into account. See note below the false positive example for more info.
 
 **Example:**
 
@@ -154,8 +151,7 @@ Actual event: Miss Americana: A Tribute to Taylor Swift
 Similarity score: 1 <- This is a exact match, but it is probably not the event we want
 ```
 
-> [!NOTE]
-> In the false positive example above, as the substring matching is bidirectional, if you were looking explicitly for the **tribute** event, and an actual event called **Taylor Swift** event came up, the event similarity would still be 1.
+For a more in depth explanation of the string matching algorithm, [see this PR](https://github.com/ahobsonsayers/twigots/pull/2).
 
 ### Normalization
 

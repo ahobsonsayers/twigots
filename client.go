@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/imroc/req/v3"
 	"github.com/k3a/html2text"
+	"github.com/samber/lo"
 )
 
 type Client struct {
@@ -95,53 +97,6 @@ func (f FetchTicketListingsInput) Validate() error {
 	return nil
 }
 
-// FetchTicketListings gets ticket listings using the specified input.
-func (c *Client) FetchTicketListings(
-	ctx context.Context,
-	input FetchTicketListingsInput,
-) (TicketListings, error) {
-	input.applyDefaults()
-	err := input.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("invalid input: %w", err)
-	}
-
-	// Iterate through feeds until have equal to or more ticket listings than desired
-	ticketListings := make(TicketListings, 0, input.MaxNumber)
-	earliestTicketTime := input.CreatedBefore
-	for (input.MaxNumber < 0 || len(ticketListings) < input.MaxNumber) &&
-		earliestTicketTime.After(input.CreatedAfter) {
-
-		feedUrl, err := FeedUrl(FeedUrlInput{
-			APIKey:      c.apiKey,
-			Country:     input.Country,
-			Regions:     input.Regions,
-			NumListings: input.NumPerRequest,
-			BeforeTime:  earliestTicketTime,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get feed url: %w", err)
-		}
-
-		feedTicketListings, err := c.FetchTicketListingsByFeedUrl(ctx, feedUrl)
-		if err != nil {
-			return nil, err
-		}
-		if len(feedTicketListings) == 0 {
-			return nil, errors.New("no tickets returned")
-		}
-
-		ticketListings = append(ticketListings, feedTicketListings...)
-		earliestTicketTime = feedTicketListings[len(feedTicketListings)-1].CreatedAt.Time
-	}
-
-	// Only return ticket listings requested
-	ticketListings = sliceToMaxNumTicketListings(ticketListings, input.MaxNumber)
-	ticketListings = filterToCreatedAfter(ticketListings, input.CreatedAfter)
-
-	return ticketListings, nil
-}
-
 // FetchTicketListings gets ticket listings using the specified feel url.
 func (c *Client) FetchTicketListingsByFeedUrl(
 	ctx context.Context,
@@ -168,6 +123,100 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 	return UnmarshalTwicketsFeedJson(bodyBytes)
 }
 
+// FetchTicketListings gets ticket listings using the specified input.
+func (c *Client) FetchTicketListings(
+	ctx context.Context,
+	input FetchTicketListingsInput,
+) (TicketListings, error) {
+	input.applyDefaults()
+	err := input.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("invalid input: %w", err)
+	}
+
+	// Iterate through feeds until have the number of listings desired
+	// or listings creation time is before the created after input
+	listings := make(TicketListings, 0, input.MaxNumber)
+	seenListingIds := mapset.NewSetWithSize[string](input.MaxNumber)
+	numListingsRemaining := input.MaxNumber
+	earliestTicketTime := input.CreatedBefore
+	for {
+
+		// Get feed url
+		feedUrl, err := FeedUrl(FeedUrlInput{
+			APIKey:      c.apiKey,
+			Country:     input.Country,
+			Regions:     input.Regions,
+			NumListings: lo.Min([]int{input.NumPerRequest, numListingsRemaining}),
+			BeforeTime:  earliestTicketTime,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get feed url: %w", err)
+		}
+
+		// Fetch new listings
+		newListings, err := c.FetchTicketListingsByFeedUrl(ctx, feedUrl)
+		if err != nil {
+			return nil, err
+		}
+		if len(newListings) == 0 {
+			return nil, errors.New("no listings returned")
+		}
+
+		// Process listings, ignoring duplicates and those created too early.
+		// Will return shouldBreak if a break condition is met.
+		newListings, shouldBreak := processFeedListings(
+			newListings, seenListingIds,
+			numListingsRemaining, input.CreatedAfter,
+		)
+
+		// Update loop variables
+		listings = append(listings, newListings...)
+		numListingsRemaining = input.MaxNumber - len(listings)
+		earliestTicketTime = listings[len(listings)-1].CreatedAt.Time
+
+		if shouldBreak {
+			break
+		}
+	}
+
+	return listings, nil
+}
+
+// processFeedListings, ignoring duplicates and those created too early.
+// Returns the processed ticket listings, an whether iteration should continue.
+// seenListingIds is updated in place.
+func processFeedListings(
+	listings TicketListings,
+	seenListingIds mapset.Set[string],
+	maxNumber int,
+	createdAfter time.Time,
+) ([]TicketListing, bool) {
+	processedListings := make([]TicketListing, 0, len(listings))
+	for _, listing := range listings {
+
+		// If listing created before the earliest allowed time, break
+		if listing.CreatedAt.Before(createdAfter) {
+			return processedListings, true
+		}
+
+		// Ignore duplicates
+		if seenListingIds.Contains(listing.Id) {
+			continue
+		}
+
+		processedListings = append(processedListings, listing)
+		seenListingIds.Add(listing.Id)
+
+		// If number of listings matches the max number, break
+		if len(processedListings) == maxNumber {
+			return processedListings, true
+		}
+	}
+
+	return processedListings, false
+}
+
 // NewClient creates a new Twickets client
 func NewClient(apiKey string) (*Client, error) {
 	if apiKey == "" {
@@ -179,21 +228,4 @@ func NewClient(apiKey string) (*Client, error) {
 		client: client,
 		apiKey: apiKey,
 	}, nil
-}
-
-func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings int) TicketListings {
-	if len(listings) > maxNumTicketListings {
-		listings = listings[:maxNumTicketListings]
-	}
-	return listings
-}
-
-func filterToCreatedAfter(listings TicketListings, createdAfter time.Time) TicketListings {
-	filteredListings := make(TicketListings, 0, len(listings))
-	for _, listing := range listings {
-		if listing.CreatedAt.After(createdAfter) {
-			filteredListings = append(filteredListings, listing)
-		}
-	}
-	return filteredListings
 }

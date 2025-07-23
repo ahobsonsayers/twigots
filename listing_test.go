@@ -1,8 +1,13 @@
 package twigots_test
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/ahobsonsayers/twigots"
+	"github.com/ahobsonsayers/utilopia/testutils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,4 +66,19 @@ func TestTicketListingDiscountString(t *testing.T) {
 	tickets := testTicketListings(t)
 	discountString := tickets[0].DiscountString()
 	require.Equal(t, "14.41%", discountString)
+}
+
+func testTicketListings(t *testing.T) twigots.TicketListings {
+	projectDirectory := testutils.ProjectDirectory(t)
+	feedJsonFilePath := filepath.Join(projectDirectory, "test", "data", "fullFeedResponse.json")
+
+	feedJsonFile, err := os.Open(feedJsonFilePath)
+	require.NoError(t, err)
+	feedJson, err := io.ReadAll(feedJsonFile)
+	require.NoError(t, err)
+
+	tickets, err := twigots.UnmarshalTwicketsFeedJson(feedJson)
+	require.NoError(t, err)
+
+	return tickets
 }
