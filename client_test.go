@@ -193,7 +193,7 @@ func getMockUrlAndResponder(
 	t *testing.T,
 	events []string,
 	startTime time.Time,
-	interval time.Duration,
+	interval time.Duration, // nolint:unparam
 ) (string, httpmock.Responder) {
 	url := getMockUrl(events, startTime)
 
