@@ -23,31 +23,31 @@ import (
 const testAPIKey = "test"
 
 var testEvents = []string{
-    "Adele",
-    "Arctic Monkeys",
-    "Ariana Grande",
-    "Bad Bunny",
-    "Billie Eilish",
-    "Blink-182",
-    "Bruno Mars",
-    "Coldplay",
-    "Doja Cat",
-    "Drake",
-    "Dua Lipa",
-    "Ed Sheeran",
-    "Fall Out Boy",
-    "Green Day",
-    "Harry Styles",
-    "Imagine Dragons",
-    "Justin Bieber",
-    "Olivia Rodrigo",
-    "Panic! At The Disco",
-    "Post Malone",
-    "Sum 41",
-    "Taylor Swift",
-    "The 1975",
-    "The Killers",
-    "The Weeknd",
+	"Adele",
+	"Arctic Monkeys",
+	"Ariana Grande",
+	"Bad Bunny",
+	"Billie Eilish",
+	"Blink-182",
+	"Bruno Mars",
+	"Coldplay",
+	"Doja Cat",
+	"Drake",
+	"Dua Lipa",
+	"Ed Sheeran",
+	"Fall Out Boy",
+	"Green Day",
+	"Harry Styles",
+	"Imagine Dragons",
+	"Justin Bieber",
+	"Olivia Rodrigo",
+	"Panic! At The Disco",
+	"Post Malone",
+	"Sum 41",
+	"Taylor Swift",
+	"The 1975",
+	"The Killers",
+	"The Weeknd",
 }
 
 func TestGetLatestTicketListingsReal(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGetLatestTicketListings(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup mock
-	url, responder := getMockUrlAndResponder(t, testEventNames, testTime, time.Minute)
+	url, responder := getMockUrlAndResponder(t, testEvents[:10], testTime, time.Minute)
 	httpmock.ActivateNonDefault(twicketsClient.Client())
 	httpmock.RegisterResponder("GET", url, responder)
 
@@ -93,18 +93,19 @@ func TestGetLatestTicketListings(t *testing.T) {
 	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
+			// By default gets 10 tickets
 			Country:       twigots.CountryUnitedKingdom,
-			MaxNumber:     10, // 10 is the default
 			CreatedBefore: testTime,
 		},
 	)
 	require.NoError(t, err)
-	for i := 0; i < 5; i++ {
-		require.Equal(t, testEventNames[i], listings[i].Event.Name)
+	require.Len(t, listings, 10)
+	for i, listing := range listings {
+		require.Equal(t, testEvents[i], listing.Event.Name)
 	}
 }
 
-func TestGetLatestTicketListingsMaxNumber(t *testing.T) {
+func TestGetLatestTicketListingsPaginatedMaxNumber(t *testing.T) {
 	testTime := time.Now()
 
 	// Create client
@@ -112,28 +113,41 @@ func TestGetLatestTicketListingsMaxNumber(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup mock
-	url, responder := getMockUrlAndResponder(t, testEventNames[0:5], testTime, time.Minute)
+	testEvents1 := testEvents[:10]
+	testEvents2 := testEvents[10:20]
+	testEvents3 := testEvents[20:23]
+
+	testTime1 := testTime
+	testTime2 := testTime1.Add(-9 * time.Minute)
+	testTime3 := testTime2.Add(-9 * time.Minute)
+
+	url1, responder1 := getMockUrlAndResponder(t, testEvents1, testTime1, time.Minute)
+	url2, responder2 := getMockUrlAndResponder(t, testEvents2, testTime2, time.Minute)
+	url3, responder3 := getMockUrlAndResponder(t, testEvents3, testTime3, time.Minute)
+
 	httpmock.ActivateNonDefault(twicketsClient.Client())
-	httpmock.RegisterResponder("GET", url, responder)
+	httpmock.RegisterResponder("GET", url1, responder1)
+	httpmock.RegisterResponder("GET", url2, responder2)
+	httpmock.RegisterResponder("GET", url3, responder3)
 
 	// Fetch ticket listings
-	// This should return the first 5 in the test feed response
+	// This should return all 10 in the test feed response
 	listings, err := twicketsClient.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			Country:       twigots.CountryUnitedKingdom,
-			MaxNumber:     5,
+			MaxNumber:     23,
 			CreatedBefore: testTime,
 		},
 	)
 	require.NoError(t, err)
-	require.Len(t, listings, 5)
-	for i := 0; i < 5; i++ {
-		require.Equal(t, testEventNames[i], listings[i].Event.Name)
+	require.Len(t, listings, 23)
+	for i, listing := range listings {
+		require.Equal(t, testEvents[i], listing.Event.Name)
 	}
 }
 
-func TestGetLatestTicketListingsCreatedAfter(t *testing.T) {
+func TestGetLatestTicketListingsPaginatedCreatedAfter(t *testing.T) {
 	testTime := time.Now()
 
 	// Create client
@@ -141,9 +155,19 @@ func TestGetLatestTicketListingsCreatedAfter(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup mock
-	url, responder := getMockUrlAndResponder(t, testEventNames, testTime, time.Minute)
+	// Setup mock
+	testEvents1 := testEvents[:10]
+	testEvents2 := testEvents[10:20]
+
+	testTime1 := testTime
+	testTime2 := testTime1.Add(-9 * time.Minute)
+
+	url1, responder1 := getMockUrlAndResponder(t, testEvents1, testTime1, time.Minute)
+	url2, responder2 := getMockUrlAndResponder(t, testEvents2, testTime2, time.Minute)
+
 	httpmock.ActivateNonDefault(twicketsClient.Client())
-	httpmock.RegisterResponder("GET", url, responder)
+	httpmock.RegisterResponder("GET", url1, responder1)
+	httpmock.RegisterResponder("GET", url2, responder2)
 
 	// Fetch ticket listings
 	// This should return the first 5 in the test feed response
@@ -152,13 +176,14 @@ func TestGetLatestTicketListingsCreatedAfter(t *testing.T) {
 		twigots.FetchTicketListingsInput{
 			Country:       twigots.CountryUnitedKingdom,
 			CreatedBefore: testTime,
-			CreatedAfter:  testTime.Add(-5 * time.Minute),
+			MaxNumber:     100, // Large so we don't get limited by max number (default 10)
+			CreatedAfter:  testTime.Add(-14 * time.Minute),
 		},
 	)
 	require.NoError(t, err)
-	require.Len(t, listings, 5)
-	for i := 0; i < 5; i++ {
-		require.Equal(t, testEventNames[i], listings[i].Event.Name)
+	require.Len(t, listings, 15)
+	for i, listing := range listings {
+		require.Equal(t, testEvents[i], listing.Event.Name)
 	}
 }
 
