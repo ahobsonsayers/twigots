@@ -50,7 +50,7 @@ var testEvents = []string{
 	"The Weeknd",
 }
 
-func TestGetLatestTicketListingsReal(t *testing.T) {
+func TestFetchListingsReal(t *testing.T) {
 	testutils.SkipIfCI(t)
 
 	projectDirectory := testutils.ProjectDirectory(t)
@@ -76,8 +76,8 @@ func TestGetLatestTicketListingsReal(t *testing.T) {
 	require.Len(t, listings, 25)
 }
 
-func TestGetLatestTicketListings(t *testing.T) {
-	testTime := time.Now()
+func TestFetchListings(t *testing.T) {
+	testTime := time.Now().Truncate(time.Millisecond)
 
 	// Create client
 	twicketsClient, err := twigots.NewClient(testAPIKey)
@@ -105,8 +105,8 @@ func TestGetLatestTicketListings(t *testing.T) {
 	}
 }
 
-func TestGetLatestTicketListingsPaginatedMaxNumber(t *testing.T) {
-	testTime := time.Now()
+func TestFetchListingsPaginatedMaxNumber(t *testing.T) {
+	testTime := time.Now().Truncate(time.Millisecond)
 
 	// Create client
 	twicketsClient, err := twigots.NewClient(testAPIKey)
@@ -118,8 +118,8 @@ func TestGetLatestTicketListingsPaginatedMaxNumber(t *testing.T) {
 	testEvents3 := testEvents[20:23]
 
 	testTime1 := testTime
-	testTime2 := testTime1.Add(-9 * time.Minute)
-	testTime3 := testTime2.Add(-9 * time.Minute)
+	testTime2 := testTime1.Add(-10 * time.Minute)
+	testTime3 := testTime2.Add(-10 * time.Minute)
 
 	url1, responder1 := getMockUrlAndResponder(t, testEvents1, testTime1, time.Minute)
 	url2, responder2 := getMockUrlAndResponder(t, testEvents2, testTime2, time.Minute)
@@ -147,20 +147,19 @@ func TestGetLatestTicketListingsPaginatedMaxNumber(t *testing.T) {
 	}
 }
 
-func TestGetLatestTicketListingsPaginatedCreatedAfter(t *testing.T) {
-	testTime := time.Now()
+func TestFetchListingsPaginatedCreatedAfter(t *testing.T) {
+	testTime := time.Now().Truncate(time.Millisecond)
 
 	// Create client
 	twicketsClient, err := twigots.NewClient(testAPIKey)
 	require.NoError(t, err)
 
 	// Setup mock
-	// Setup mock
 	testEvents1 := testEvents[:10]
 	testEvents2 := testEvents[10:20]
 
 	testTime1 := testTime
-	testTime2 := testTime1.Add(-9 * time.Minute)
+	testTime2 := testTime1.Add(-10 * time.Minute)
 
 	url1, responder1 := getMockUrlAndResponder(t, testEvents1, testTime1, time.Minute)
 	url2, responder2 := getMockUrlAndResponder(t, testEvents2, testTime2, time.Minute)
@@ -175,9 +174,9 @@ func TestGetLatestTicketListingsPaginatedCreatedAfter(t *testing.T) {
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			Country:       twigots.CountryUnitedKingdom,
-			CreatedBefore: testTime,
 			MaxNumber:     100, // Large so we don't get limited by max number (default 10)
-			CreatedAfter:  testTime.Add(-14 * time.Minute),
+			CreatedBefore: testTime,
+			CreatedAfter:  testTime.Add(-16 * time.Minute),
 		},
 	)
 	require.NoError(t, err)
@@ -185,6 +184,34 @@ func TestGetLatestTicketListingsPaginatedCreatedAfter(t *testing.T) {
 	for i, listing := range listings {
 		require.Equal(t, testEvents[i], listing.Event.Name)
 	}
+}
+
+func TestFetchListingsCreatedAfterLatestListingReturnsNothing(t *testing.T) {
+	testTime := time.Now().Truncate(time.Millisecond)
+
+	// Create client
+	twicketsClient, err := twigots.NewClient(testAPIKey)
+	require.NoError(t, err)
+
+	// Setup mock
+	testEvents := testEvents[:10]
+	url, responder := getMockUrlAndResponder(t, testEvents, testTime, time.Minute)
+	httpmock.ActivateNonDefault(twicketsClient.Client())
+	httpmock.RegisterResponder("GET", url, responder)
+
+	// Fetch ticket listings
+	// This should return no listings.
+	listings, err := twicketsClient.FetchTicketListings(
+		context.Background(),
+		twigots.FetchTicketListingsInput{
+			Country:       twigots.CountryUnitedKingdom,
+			MaxNumber:     100, // Large so we don't get limited by max number (default 10)
+			CreatedBefore: testTime,
+			CreatedAfter:  testTime.Add(-time.Minute), // This should match latest ticket time
+		},
+	)
+	require.NoError(t, err)
+	require.Empty(t, listings)
 }
 
 // getMockUrlAndResponder returns a mock url and responder for testing purposes.
@@ -196,8 +223,11 @@ func getMockUrlAndResponder(
 	interval time.Duration, // nolint:unparam
 ) (string, httpmock.Responder) {
 	url := getMockUrl(events, startTime)
+	response := getMockResponse(events, startTime, interval)
 
-	responseJson := getMockResponseJson(t, events, startTime, interval)
+	// Marshal response
+	responseJson, err := json.Marshal(response)
+	require.NoError(t, err)
 
 	responder := func(_ *http.Request) (*http.Response, error) {
 		response := httpmock.NewBytesResponse(http.StatusOK, responseJson)
@@ -218,14 +248,14 @@ func getMockUrl(events []string, startTime time.Time) string {
 	)
 }
 
-func getMockResponseJson(t *testing.T, events []string, startTime time.Time, interval time.Duration) []byte {
+func getMockResponse(events []string, startTime time.Time, interval time.Duration) map[string]any {
 	// Create response.
 	// All uneeded/unused fields have been stripped.
 	// To see the real full feed response, see feelFeedResponse.json
 	var responseListings []any
 	for i, event := range events {
 		id := rand.Int()
-		createdAt := startTime.Add(-interval * time.Duration(i))
+		createdAt := startTime.Add(-time.Duration(i+1) * interval)
 
 		idString := strconv.Itoa(id)
 		createdAtString := strconv.Itoa(int(createdAt.UnixMilli()))
@@ -250,14 +280,8 @@ func getMockResponseJson(t *testing.T, events []string, startTime time.Time, int
 		}
 	}
 
-	// Create final response
-	response := map[string]any{
+	// Return final response
+	return map[string]any{
 		"responseData": responseListings,
 	}
-
-	// Marshal response
-	responseJson, err := json.Marshal(response)
-	require.NoError(t, err)
-
-	return responseJson
 }

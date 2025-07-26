@@ -170,14 +170,15 @@ func (c *Client) FetchTicketListings(
 			numListingsRemaining, input.CreatedAfter,
 		)
 
-		// Update loop variables
+		// Update listings
 		listings = append(listings, newListings...)
-		numListingsRemaining = input.MaxNumber - len(listings)
-		earliestTicketTime = listings[len(listings)-1].CreatedAt.Time
-
 		if shouldBreak {
 			break
 		}
+
+		// Update loop variables
+		numListingsRemaining = input.MaxNumber - len(listings)
+		earliestTicketTime = listings[len(listings)-1].CreatedAt.Time
 	}
 
 	return listings, nil
@@ -195,8 +196,8 @@ func processFeedListings(
 	processedListings := make([]TicketListing, 0, len(listings))
 	for _, listing := range listings {
 
-		// If listing created before the earliest allowed time, break
-		if listing.CreatedAt.Before(createdAfter) {
+		// If listing NOT created after the earliest allowed time, break
+		if !listing.CreatedAt.After(createdAfter) {
 			return processedListings, true
 		}
 
