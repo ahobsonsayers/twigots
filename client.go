@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/imroc/req/v3"
 	"github.com/k3a/html2text"
 	"github.com/samber/lo"
@@ -137,9 +136,8 @@ func (c *Client) FetchTicketListings(
 	// Iterate through feeds until have the number of listings desired
 	// or listings creation time is before the created after input
 	listings := make(TicketListings, 0, input.MaxNumber)
-	seenListingIds := mapset.NewSetWithSize[string](input.MaxNumber)
-	numListingsRemaining := input.MaxNumber
 	earliestTicketTime := input.CreatedBefore
+	numListingsRemaining := input.MaxNumber
 	for {
 
 		// Get feed url
@@ -147,8 +145,8 @@ func (c *Client) FetchTicketListings(
 			APIKey:      c.apiKey,
 			Country:     input.Country,
 			Regions:     input.Regions,
-			NumListings: lo.Min([]int{input.NumPerRequest, numListingsRemaining}),
 			BeforeTime:  earliestTicketTime,
+			NumListings: lo.Min([]int{input.NumPerRequest, numListingsRemaining}),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to get feed url: %w", err)
@@ -163,50 +161,43 @@ func (c *Client) FetchTicketListings(
 			return nil, errors.New("no listings returned")
 		}
 
-		// Process listings, ignoring duplicates and those created too early.
+		// Process listings, ignoring those created too early.
 		// Will return shouldBreak if a break condition is met.
-		newListings, shouldBreak := processFeedListings(
-			newListings, seenListingIds,
-			numListingsRemaining, input.CreatedAfter,
+		processedListings, shouldBreak := processFeedListings(
+			newListings, numListingsRemaining, input.CreatedAfter,
 		)
 
-		// Update loop variables
-		listings = append(listings, newListings...)
-		numListingsRemaining = input.MaxNumber - len(listings)
-		earliestTicketTime = listings[len(listings)-1].CreatedAt.Time
-
+		// Update listings
+		listings = append(listings, processedListings...)
 		if shouldBreak {
 			break
 		}
+
+		// Update loop variables
+		earliestTicketTime = listings[len(listings)-1].CreatedAt.Time
+		numListingsRemaining = input.MaxNumber - len(listings)
 	}
 
 	return listings, nil
 }
 
-// processFeedListings, ignoring duplicates and those created too early.
+// processFeedListings, ignoring those created too early.
 // Returns the processed ticket listings, an whether iteration should continue.
-// seenListingIds is updated in place.
 func processFeedListings(
 	listings TicketListings,
-	seenListingIds mapset.Set[string],
 	maxNumber int,
 	createdAfter time.Time,
 ) ([]TicketListing, bool) {
 	processedListings := make([]TicketListing, 0, len(listings))
 	for _, listing := range listings {
 
-		// If listing created before the earliest allowed time, break
-		if listing.CreatedAt.Before(createdAfter) {
+		// If listing NOT created after the earliest allowed time, break
+		if !listing.CreatedAt.After(createdAfter) {
 			return processedListings, true
 		}
 
-		// Ignore duplicates
-		if seenListingIds.Contains(listing.Id) {
-			continue
-		}
-
+		// Update processes listings
 		processedListings = append(processedListings, listing)
-		seenListingIds.Add(listing.Id)
 
 		// If number of listings matches the max number, break
 		if len(processedListings) == maxNumber {
