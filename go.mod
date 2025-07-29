@@ -1,11 +1,10 @@
 module github.com/ahobsonsayers/twigots
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/ahobsonsayers/utilopia v0.2.1
 	github.com/davecgh/go-spew v1.1.1
-	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/hbollon/go-edlib v1.6.0
 	github.com/imroc/req/v3 v3.52.2
 	github.com/jarcoal/httpmock v1.4.0
@@ -30,7 +29,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.51.0 // indirect
-	github.com/refraction-networking/utls v1.6.7 // indirect
+	github.com/refraction-networking/utls v1.7.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/mock v0.5.1 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
