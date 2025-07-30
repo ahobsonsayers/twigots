@@ -12,6 +12,13 @@ Includes utilities to help filter the ticket listings and find the ones you want
 Powers (the similarly creatively named)
 [twitchets](https://github.com/ahobsonsayers/twitchets), a tool to watch for event ticket listings on Twickets and notify you so you can snap them up! 🫰
 
+- [Installation](#installation)
+- [Getting an API Key](#getting-an-api-key)
+- [Example Usage](#example-usage)
+- [How does the event name matching/similarity work?](#how-does-the-event-name-matchingsimilarity-work)
+	- [Normalization](#normalization)
+- [Why the name twigots?](#why-the-name-twigots)
+
 ## Installation
 
 ```bash
@@ -30,6 +37,13 @@ This API key is not provided here due to liability concerns, but it appears to b
 
 ## Example Usage
 
+> [!Warning]
+> Although this package is functional and ready for use, it is still a work in progress and is subject to change without notice - the API and usage may be modified at any time.
+>
+> Use with caution and check for updates regularly.
+
+Example can be seen in [`example/main.go`](example/main.go) or below:
+
 ```go
 package main
 
@@ -40,18 +54,23 @@ import (
 	"time"
 
 	"github.com/ahobsonsayers/twigots"
+	"github.com/ahobsonsayers/twigots/filter"
 )
 
 func main() {
 	apiKey := "my_api_key"
 
+	// Create twickets client (using api key)
+	client, err := twigots.NewClient(apiKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Fetch ticket listings
-	client := twigots.NewClient(nil) // Or use a custom http client
 	listings, err := client.FetchTicketListings(
 		context.Background(),
 		twigots.FetchTicketListingsInput{
 			// Required
-			APIKey:  apiKey,
 			Country: twigots.CountryUnitedKingdom, // Only UK is supported at the moment
 			// Optional. See all options in godoc
 			CreatedBefore: time.Now(),
@@ -65,30 +84,37 @@ func main() {
 
 	log.Printf("Fetched %d ticket listings", len(listings))
 
-	// Filter ticket listing for the ones we want
-	filteredListings, err := listings.Filter(
-		// Filter for listings of Hamilton tickets
-		twigots.Filter{Event: "Hamilton"},
-		// Also filter for listings of Coldplay tickets.
-		// Lets impose extra restrictions on these.
-		twigots.Filter{
-			Event:           "Coldplay", // Required
-			EventSimilarity: 1,          // Avoid false positives
-			Regions: []twigots.Region{
-				twigots.RegionLondon,
-				twigots.RegionSouth,
-			},
-			NumTickets:  2,   // Exactly 2 tickets in the listing
-			MinDiscount: 0.1, // Discount of > 10%
-		},
+	// Filter ticket listings just by name
+	// Use the default event name similarity (0.9) to allow minor mismatches
+	hamiltonListings := filter.FilterTicketListings(
+		listings,
+		filter.EventName("Hamilton", filter.DefaultEventNameSimilarity),
 	)
-	if err != nil {
-		log.Fatal(err)
+	for _, listing := range hamiltonListings {
+		slog.Info(
+			"Found Hamilton ticket listing",
+			"Event", listing.Event.Name,
+			"NumTickets", listing.NumTickets,
+			"Price", listing.TotalPriceInclFee().String(),
+			"OriginalPrice", listing.OriginalTicketPrice().String(),
+			"URL", listing.URL(),
+		)
 	}
 
-	for _, listing := range filteredListings {
+	// Filter ticket listings just by several filters
+	coldplayListings := filter.FilterTicketListings(
+		listings,
+		filter.EventName("Coldplay", 1), // Event name similarity of 1 - exact match only
+		filter.EventRegion( // Only in specific regions
+			twigots.RegionLondon,
+			twigots.RegionSouth,
+		),
+		filter.NumTickets(2),    // Exactly 2 tickets in the listing
+		filter.MinDiscount(0.1), // Discount of > 10%
+	)
+	for _, listing := range coldplayListings {
 		slog.Info(
-			"Ticket listing found matching a filter",
+			"Found Coldplay ticket listing",
 			"Event", listing.Event.Name,
 			"NumTickets", listing.NumTickets,
 			"Price", listing.TotalPriceInclFee().String(),
@@ -99,8 +125,50 @@ func main() {
 }
 ```
 
+## How does the event name matching/similarity work?
+
+Event name similarity is calculated using a modified [Smith-Waterman-Gotoh algorithm](https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm). The complexity behind this algorithm does not need to be understood, but for all intents and purposes, it can be thought of as fuzzy substring matching.
+
+If the desired event name appears within the actual event name returned by twickets (as a substring), the event similarity will be 1. Equally, if the desired event name does not appear at all, the similarity will be 0.
+
+Setting a required similarity below, but close to 1, will allow for small inconsistencies due to misspelling etc., but can return false positives. We recommend (and default to) a value of `0.9`.
+
+False positives can also occur if your desired event name appears in the actual event name, but the event is not the one you want. This can often happen with things like tribute bands - see the example below.
+
+**Example:**
+
+```
+Desired event: Taylor Swift
+Actual event: Taylor Swift: The Eras Tour
+Similarity score: 1
+```
+
+**Example of a false positive:**
+
+```
+Desired event: Taylor Swift
+Actual event: Miss Americana: A Tribute to Taylor Swift
+Similarity score: 1 <- This is a exact match, but it is probably not the event we want
+```
+
+For a more in depth explanation of the string matching algorithm, [see this PR](https://github.com/ahobsonsayers/twigots/pull/2).
+
+### Normalization
+
+To help with matching, both the desired and actual event names are normalized before similarity is calculated.
+
+This is done by:
+
+- Converting to lower case
+- Removing all symbols/non-alphanumeric characters (except **&** - see below)
+- Replacing all **&** symbols with **and**
+- Removing any **the** prefix
+- Trimming leading and trailing whitespace and replacing all 2+ whitespace with a single space
+- Replacing accented characters with their non-accented characters
+- Spaces are added to either side of the string, to help avoid cases where the word appears inside another word e.g. grate shouldn't match un*grate*ful
+
 ## Why the name twigots?
 
 Because its a stupid mash up of Tickets and Go... and also why not?
 
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fahobsonsayers%2Ftwigots&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visitors+day+%2F+total&edge_flat=false)](https://hits.seeyoufarm.com)
+[![Hits](https://hits.sh/github.com/ahobsonsayers/twigots.svg?view=today-total&label=Visitors%20Day%20%2F%20Total)](https://hits.sh/github.com/ahobsonsayers/twigots/)

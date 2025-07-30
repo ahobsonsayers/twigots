@@ -10,10 +10,12 @@ import (
 
 	"github.com/imroc/req/v3"
 	"github.com/k3a/html2text"
+	"github.com/samber/lo"
 )
 
 type Client struct {
 	client *req.Client
+	apiKey string
 }
 
 func (c *Client) Client() *http.Client {
@@ -29,7 +31,6 @@ func (c *Client) Client() *http.Client {
 // is met first will stop the fetching of ticket listings.
 type FetchTicketListingsInput struct {
 	// Required fields
-	APIKey  string
 	Country Country
 
 	// Regions for which to fetch ticket listings from.
@@ -80,9 +81,6 @@ func (f *FetchTicketListingsInput) applyDefaults() {
 // Validate the input struct used to get ticket listings.
 // This is used internally to check the input, but can also be used externally.
 func (f FetchTicketListingsInput) Validate() error {
-	if f.APIKey == "" {
-		return errors.New("api key must be set")
-	}
 	if f.Country.Value == "" {
 		return errors.New("country must be set")
 	}
@@ -96,69 +94,6 @@ func (f FetchTicketListingsInput) Validate() error {
 		return errors.New("if not limiting number of ticket listings, created after must be set")
 	}
 	return nil
-}
-
-// FetchTicketListings gets ticket listings using the specified input.
-func (c *Client) FetchTicketListings(
-	ctx context.Context,
-	input FetchTicketListingsInput,
-) (TicketListings, error) {
-	input.applyDefaults()
-	err := input.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("invalid input: %w", err)
-	}
-
-	// Iterate through feeds until have equal to or more ticket listings than desired
-	ticketListings := make(TicketListings, 0, input.MaxNumber)
-	earliestTicketTime := input.CreatedBefore
-	for (input.MaxNumber < 0 || len(ticketListings) < input.MaxNumber) &&
-		earliestTicketTime.After(input.CreatedAfter) {
-
-		feedUrl, err := FeedUrl(FeedUrlInput{
-			APIKey:      input.APIKey,
-			Country:     input.Country,
-			Regions:     input.Regions,
-			NumListings: input.NumPerRequest,
-			BeforeTime:  earliestTicketTime,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get feed url: %w", err)
-		}
-
-		feedTicketListings, err := c.FetchTicketListingsByFeedUrl(ctx, feedUrl)
-		if err != nil {
-			return nil, err
-		}
-		if len(feedTicketListings) == 0 {
-			return nil, errors.New("no tickets returned")
-		}
-
-		ticketListings = append(ticketListings, feedTicketListings...)
-		earliestTicketTime = feedTicketListings[len(feedTicketListings)-1].CreatedAt.Time
-	}
-
-	// Only return ticket listings requested
-	ticketListings = sliceToMaxNumTicketListings(ticketListings, input.MaxNumber)
-	ticketListings = filterToCreatedAfter(ticketListings, input.CreatedAfter)
-
-	return ticketListings, nil
-}
-
-func flaresolverrRequestMiddleware(client *req.Client, req *req.Request) error {
-	if req.Method != http.MethodGet {
-		return nil
-	}
-
-	
-
-	// 	'{
-	//   "cmd": "request.get",
-	//   "url": "http://www.google.com/",
-	//   "maxTimeout": 60000
-	// }'
-
-	return nil // return nil if it is success
 }
 
 // FetchTicketListings gets ticket listings using the specified feel url.
@@ -187,35 +122,117 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 	return UnmarshalTwicketsFeedJson(bodyBytes)
 }
 
-// NewClient creates a new Twickets client
-func NewClient() *Client {
-	client := req.C().ImpersonateChrome()
-
-	// client.Transport = req.NewTransport()
-	// if httpClient.Transport == nil {
-	// 	httpClient.Transport = &http.Transport{
-	// 		TLSClientConfig: &tls.Config{
-	// 			MinVersion: tls.VersionTLS12,
-	// 		},
-	// 	}
-	// }
-
-	return &Client{client: client}
-}
-
-func sliceToMaxNumTicketListings(listings TicketListings, maxNumTicketListings int) TicketListings {
-	if len(listings) > maxNumTicketListings {
-		listings = listings[:maxNumTicketListings]
+// FetchTicketListings gets ticket listings using the specified input.
+func (c *Client) FetchTicketListings(
+	ctx context.Context,
+	input FetchTicketListingsInput,
+) (TicketListings, error) {
+	input.applyDefaults()
+	err := input.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("invalid input: %w", err)
 	}
-	return listings
+
+	// Iterate through feeds until have the number of listings desired
+	// or listings creation time is before the created after input
+	listings := make(TicketListings, 0, input.MaxNumber)
+	earliestTicketTime := input.CreatedBefore
+	numListingsRemaining := input.MaxNumber
+	for {
+
+		// Get feed url
+		feedUrl, err := FeedUrl(FeedUrlInput{
+			APIKey:      c.apiKey,
+			Country:     input.Country,
+			Regions:     input.Regions,
+			BeforeTime:  earliestTicketTime,
+			NumListings: lo.Min([]int{input.NumPerRequest, numListingsRemaining}),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get feed url: %w", err)
+		}
+
+		// Fetch new listings
+		newListings, err := c.FetchTicketListingsByFeedUrl(ctx, feedUrl)
+		if err != nil {
+			return nil, err
+		}
+		if len(newListings) == 0 {
+			return nil, errors.New("no listings returned")
+		}
+
+		// Process listings, ignoring those created too early.
+		// Will return shouldBreak if a break condition is met.
+		processedListings, shouldBreak := processFeedListings(
+			newListings, numListingsRemaining, input.CreatedAfter,
+		)
+
+		// Update listings
+		listings = append(listings, processedListings...)
+		if shouldBreak {
+			break
+		}
+
+		// Update loop variables
+		earliestTicketTime = listings[len(listings)-1].CreatedAt.Time
+		numListingsRemaining = input.MaxNumber - len(listings)
+	}
+
+	return listings, nil
 }
 
-func filterToCreatedAfter(listings TicketListings, createdAfter time.Time) TicketListings {
-	filteredListings := make(TicketListings, 0, len(listings))
+// processFeedListings, ignoring those created too early.
+// Returns the processed ticket listings, an whether iteration should continue.
+func processFeedListings(
+	listings TicketListings,
+	maxNumber int,
+	createdAfter time.Time,
+) ([]TicketListing, bool) {
+	processedListings := make([]TicketListing, 0, len(listings))
 	for _, listing := range listings {
-		if matchesCreatedAfter(listing, createdAfter) {
-			filteredListings = append(filteredListings, listing)
+
+		// If listing NOT created after the earliest allowed time, break
+		if !listing.CreatedAt.After(createdAfter) {
+			return processedListings, true
+		}
+
+		// Update processes listings
+		processedListings = append(processedListings, listing)
+
+		// If number of listings matches the max number, break
+		if len(processedListings) == maxNumber {
+			return processedListings, true
 		}
 	}
-	return filteredListings
+
+	return processedListings, false
+}
+
+// NewClient creates a new Twickets client
+func NewClient(apiKey string) (*Client, error) {
+	if apiKey == "" {
+		return nil, errors.New("api key must be set")
+	}
+
+	client := req.C().ImpersonateChrome()
+	return &Client{
+		client: client,
+		apiKey: apiKey,
+	}, nil
+}
+
+func flaresolverrRequestMiddleware(client *req.Client, req *req.Request) error {
+	if req.Method != http.MethodGet {
+		return nil
+	}
+
+	
+
+	// 	'{
+	//   "cmd": "request.get",
+	//   "url": "http://www.google.com/",
+	//   "maxTimeout": 60000
+	// }'
+
+	return nil // return nil if it is success
 }
