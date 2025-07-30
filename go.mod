@@ -12,7 +12,7 @@ require (
 	github.com/k3a/html2text v1.2.1
 	github.com/orsinium-labs/enum v1.4.0
 	github.com/samber/lo v1.51.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	golang.org/x/text v0.27.0
 )
 
