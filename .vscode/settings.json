@@ -17,7 +17,7 @@
   "go.lintTool": "golangci-lint",
 
   // ---- Plugin Settings ----
-  "cSpell.words": ["twickets"],
+  "cSpell.words": ["twigots", "twickets", "flaresolverr"],
   "emeraldwalk.runonsave": {
     "commands": [
       {

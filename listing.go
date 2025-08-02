@@ -140,7 +140,7 @@ func UnmarshalTwicketsFeedJson(data []byte) ([]TicketListing, error) {
 	}{}
 	err := json.Unmarshal(data, &response)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	// Get non null listings. Listings are null if they have been delisted
