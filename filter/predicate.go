@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/ahobsonsayers/twigots"
-	"github.com/samber/lo"
 )
 
 // TicketListingPredicate is a predicate function that evaluates a TicketListing
@@ -31,7 +30,13 @@ func EventRegion(regions ...twigots.Region) TicketListingPredicate {
 	}
 
 	return func(listing twigots.TicketListing) bool {
-		return lo.Contains(validRegions, listing.Event.Venue.Location.Region)
+		ticketRegion := listing.Event.Venue.Location.Region
+		for _, validRegion := range validRegions {
+			if ticketRegion == validRegion {
+				return true
+			}
+		}
+		return false
 	}
 }
 
