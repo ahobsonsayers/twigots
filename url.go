@@ -27,8 +27,7 @@ func init() {
 	}
 }
 
-// ListingURL gets the url of a listing given its id and the
-// number of tickets in the listing.
+// ListingURL gets the url of a listing given its id and the number of tickets in the listing.
 //
 // Format is:
 // https://www.twickets.live/app/block/<ticketId>,<numTickets>
@@ -44,9 +43,8 @@ type FeedUrlInput struct {
 	Country Country
 
 	// Optional fields
-	Regions     []Region  // Defaults to all country regions
-	NumListings int       // Defaults to 10 ticket listings
-	BeforeTime  time.Time // Defaults to current time
+	Regions    []Region  // Defaults to all country regions
+	BeforeTime time.Time // Defaults to current time
 }
 
 // Validate the input struct used to get the feed url.
@@ -64,9 +62,12 @@ func (f FeedUrlInput) Validate() error {
 	return nil
 }
 
-// FeedUrl gets the url of a feed of ticket listings
+// FeedUrl gets the url of a ticket listings feed.
+// Note: The number of ticket listings (that are non-delisted) in the feed at this url will ALWAYS be 10.
+// There may be any number of additional delisted ticket listings.
 //
-// Format is: https://www.twickets.live/services/catalogue?q=countryCode=GB&count=100&api_key=<api_key>
+// Format is:
+// https://www.twickets.live/services/catalogue?q=countryCode=GB&count=10&api_key=<api_key>
 func FeedUrl(input FeedUrlInput) (string, error) {
 	err := input.Validate()
 	if err != nil {
@@ -89,12 +90,8 @@ func FeedUrl(input FeedUrlInput) (string, error) {
 		queryParams.Set("maxTime", strconv.Itoa(int(maxTime)))
 	}
 
-	if input.NumListings > 0 {
-		count := strconv.Itoa(input.NumListings)
-		queryParams.Set("count", count)
-	}
-
 	queryParams.Set("api_key", input.APIKey)
+	queryParams.Set("count", "10") // count must always be 10 to not get an error
 
 	// Set query
 	encodedQuery := queryParams.Encode()

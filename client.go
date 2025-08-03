@@ -10,7 +10,6 @@ import (
 
 	"github.com/imroc/req/v3"
 	"github.com/k3a/html2text"
-	"github.com/samber/lo"
 )
 
 type Client struct {
@@ -56,14 +55,6 @@ type FetchTicketListingsInput struct {
 	// Set this to fetch listings within a time period.
 	// Defaults to current time.
 	CreatedBefore time.Time
-
-	// NumPerRequest is the number of ticket listings to fetch in each request.
-	// Not all requested listings are fetched at once - instead a series of requests are made,
-	// each fetching the number of listings specified here. In theory this can be arbitrarily
-	// large to prevent having to make too many requests, however it has been known that any
-	// other number than 10 can sometimes not work.
-	// Defaults to 10. Usually can be ignored.
-	NumPerRequest int
 }
 
 func (f *FetchTicketListingsInput) applyDefaults() {
@@ -72,9 +63,6 @@ func (f *FetchTicketListingsInput) applyDefaults() {
 	}
 	if f.CreatedBefore.IsZero() {
 		f.CreatedBefore = time.Now()
-	}
-	if f.NumPerRequest <= 0 {
-		f.NumPerRequest = 10
 	}
 }
 
@@ -142,11 +130,10 @@ func (c *Client) FetchTicketListings(
 
 		// Get feed url
 		feedUrl, err := FeedUrl(FeedUrlInput{
-			APIKey:      c.apiKey,
-			Country:     input.Country,
-			Regions:     input.Regions,
-			BeforeTime:  earliestTicketTime,
-			NumListings: lo.Min([]int{input.NumPerRequest, numListingsRemaining}),
+			APIKey:     c.apiKey,
+			Country:    input.Country,
+			Regions:    input.Regions,
+			BeforeTime: earliestTicketTime,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to get feed url: %w", err)

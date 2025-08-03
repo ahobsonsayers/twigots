@@ -17,7 +17,19 @@
   "go.lintTool": "golangci-lint",
 
   // ---- Plugin Settings ----
-  "cSpell.words": ["twickets"],
+  "cSpell.words": [
+    "ahobsonsayers",
+    "delisted",
+    "godotenv",
+    "httpmock",
+    "nolint",
+    "testutils",
+    "twickets",
+    "twigots",
+    "uneeded",
+    "unparam",
+    "utilopia"
+  ],
   "emeraldwalk.runonsave": {
     "commands": [
       {
