@@ -222,7 +222,12 @@ func getMockUrlAndResponder(
 	startTime time.Time,
 	interval time.Duration, // nolint:unparam
 ) (string, httpmock.Responder) {
-	url := getMockUrl(events, startTime)
+	url := fmt.Sprintf(
+		"https://www.twickets.live/services/catalogue?api_key=%s&count=10&maxTime=%d&q=countryCode=%s",
+		testAPIKey,
+		startTime.UnixMilli(),
+		twigots.CountryUnitedKingdom.Value,
+	)
 	response := getMockResponse(events, startTime, interval)
 
 	// Marshal response
@@ -236,16 +241,6 @@ func getMockUrlAndResponder(
 	}
 
 	return url, responder
-}
-
-func getMockUrl(events []string, startTime time.Time) string {
-	return fmt.Sprintf(
-		"https://www.twickets.live/services/catalogue?api_key=%s&count=%d&maxTime=%d&q=countryCode=%s",
-		testAPIKey,
-		len(events),
-		startTime.UnixMilli(),
-		twigots.CountryUnitedKingdom.Value,
-	)
 }
 
 func getMockResponse(events []string, startTime time.Time, interval time.Duration) map[string]any {
