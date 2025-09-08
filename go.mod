@@ -1,6 +1,6 @@
 module github.com/ahobsonsayers/twigots
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/ahobsonsayers/utilopia v0.2.1
@@ -12,7 +12,7 @@ require (
 	github.com/k3a/html2text v1.2.1
 	github.com/orsinium-labs/enum v1.4.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.29.0
 )
 
 require (
@@ -28,11 +28,11 @@ require (
 	github.com/quic-go/quic-go v0.53.0 // indirect
 	github.com/refraction-networking/utls v1.7.3 // indirect
 	go.uber.org/mock v0.5.2 // indirect
-	golang.org/x/crypto v0.39.0 // indirect
-	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/tools v0.34.0 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
