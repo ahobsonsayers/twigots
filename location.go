@@ -33,6 +33,10 @@ func (c *Country) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (c Country) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Value)
+}
+
 func (c *Country) UnmarshalText(data []byte) error {
 	countryString := string(data)
 	country := Countries.Parse(countryString)
@@ -45,6 +49,10 @@ func (c *Country) UnmarshalText(data []byte) error {
 }
 
 type Region enum.Member[string]
+
+func (r Region) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.Value)
+}
 
 func (r *Region) UnmarshalJSON(data []byte) error {
 	var regionString string
