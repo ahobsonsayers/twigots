@@ -110,3 +110,7 @@ func (c *Currency) UnmarshalJSON(data []byte) error {
 	*c = *currency
 	return nil
 }
+
+func (c Currency) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Value)
+}
