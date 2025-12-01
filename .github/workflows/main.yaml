@@ -18,10 +18,15 @@ jobs:
         shell: bash
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v5
 
-      - name: Run Lint
+      - name: Setup go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run lint
         uses: golangci/golangci-lint-action@v8
 
   test:
@@ -33,24 +38,19 @@ jobs:
         shell: bash
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v5
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Setup go
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
-      - name: Setup Task
-        uses: arduino/setup-task@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download Dependencies
+      - name: Install dependencies
         run: go mod download
 
       - name: Run test
-        run: task test
+        run: go test ./...
         env:
-          CI: true
           TWICKETS_API_KEY: ${{ secrets.TWICKETS_API_KEY }}
+          CI: true

@@ -1,16 +1,3 @@
-# Ignore certain directories
-build/
-bin/
-scratch/
-
-# Ignore certain files
-.env
-.secrets
-scratch*
-*debug_bin*
-*.DS_Store
-.~lock*
-
 # -----------------------------------------------------------------
 # Go gitignore
 # https://github.com/github/gitignore/blob/main/Go.gitignore
@@ -36,6 +23,14 @@ go.work
 vendor/
 
 # Ignore certain directories
+build/
+bin/
 scratch/
 
 # Ignore certain files
+*.DS_Store
+.~lock*
+.env
+.secrets
+*.secrets
+scratch*
