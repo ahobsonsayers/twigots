@@ -104,7 +104,7 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 
 	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed ready response body: %w", err)
 	}
 
 	return UnmarshalTwicketsFeedJson(bodyBytes)
@@ -195,13 +195,23 @@ func processFeedListings(
 	return processedListings, false
 }
 
+type ClientOpt func(*req.Client) error
+
 // NewClient creates a new Twickets client
-func NewClient(apiKey string) (*Client, error) {
+func NewClient(apiKey string, opts ...ClientOpt) (*Client, error) {
 	if apiKey == "" {
 		return nil, errors.New("api key must be set")
 	}
 
-	client := req.C().ImpersonateChrome()
+	client := req.C()
+	client = client.ImpersonateChrome()
+	for _, opt := range opts {
+		err := opt(client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Client{
 		client: client,
 		apiKey: apiKey,
