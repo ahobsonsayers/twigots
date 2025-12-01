@@ -2,20 +2,22 @@
 version: "3"
 
 tasks:
-  lint:
-    cmds:
-      - golangci-lint run
-
   format:
     cmds:
-      - go fmt ./...
-      - go run github.com/segmentio/golines@latest -w .
+      - go tool gofumpt -l -w .
+
+  lint:
+    cmds:
+      - go tool golangci-lint run --fix ./...
 
   test:
     cmds:
-      - |
-        go clean -testcache
-        go test ./...
+      - go test ./...
+
+  test:clean:
+    cmds:
+      - go clean -testcache
+      - task: test
 
   run:services:
     cmds:

@@ -5,7 +5,7 @@ import "github.com/ahobsonsayers/twigots"
 // FilterTicketListings filters ticket listings to those that satisfy all of the provided predicates.
 //
 // If no predicates are provided, all listings are returned.
-func FilterTicketListings( // nolint
+func FilterTicketListings( //revive:disable:exported
 	listings []twigots.TicketListing,
 	predicates ...TicketListingPredicate,
 ) []twigots.TicketListing {
@@ -14,7 +14,8 @@ func FilterTicketListings( // nolint
 	}
 
 	result := make([]twigots.TicketListing, 0, len(listings))
-	for _, listing := range listings {
+	for idx := 0; idx < len(listings); idx++ {
+		listing := listings[idx]
 		if TicketListingMatchesAllPredicates(listing, predicates...) {
 			result = append(result, listing)
 		}

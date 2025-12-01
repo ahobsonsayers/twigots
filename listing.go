@@ -1,4 +1,4 @@
-package twigots // nolint
+package twigots
 
 import (
 	"encoding/json"
@@ -124,7 +124,8 @@ type TicketListings []TicketListing
 
 // GetById gets the first ticket listing with a matching id, or returns nil if one does not exist.
 func (l TicketListings) GetById(id string) *TicketListing {
-	for _, listing := range l {
+	for idx := 0; idx < len(l); idx++ {
+		listing := l[idx]
 		if listing.Id == id {
 			return &listing
 		}
@@ -134,7 +135,7 @@ func (l TicketListings) GetById(id string) *TicketListing {
 
 func UnmarshalTwicketsFeedJson(data []byte) ([]TicketListing, error) {
 	response := struct {
-		ResponseData []struct { // nolint
+		ResponseData []struct { //revive:disable:nested-structs
 			Listings *TicketListing `json:"catalogBlockSummary"`
 		} `json:"responseData"`
 	}{}
