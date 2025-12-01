@@ -176,7 +176,8 @@ func processFeedListings(
 	createdAfter time.Time,
 ) ([]TicketListing, bool) {
 	processedListings := make([]TicketListing, 0, len(listings))
-	for _, listing := range listings {
+	for idx := 0; idx < len(listings); idx++ {
+		listing := listings[idx]
 
 		// If listing NOT created after the earliest allowed time, break
 		if !listing.CreatedAt.After(createdAfter) {

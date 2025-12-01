@@ -220,7 +220,7 @@ func getMockUrlAndResponder(
 	t *testing.T,
 	events []string,
 	startTime time.Time,
-	interval time.Duration, // nolint:unparam
+	interval time.Duration, //nolint:unparam
 ) (string, httpmock.Responder) {
 	url := fmt.Sprintf(
 		"https://www.twickets.live/services/catalogue?api_key=%s&count=10&maxTime=%d&q=countryCode=%s",

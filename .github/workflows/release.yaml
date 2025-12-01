@@ -6,31 +6,33 @@ on:
       commit:
         description: Branch, tag or commit hash
         type: string
+        required: true
         default: main
+
       default-bump:
-        description: Default version bump (if none found in commit messages)
+        description: Default Version Bump (if none found in commit messages)
         type: choice
         options:
           - major
           - minor
           - patch
+        required: false
         default: patch
-
-permissions:
-  contents: write
 
 jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    permissions:
+      contents: write
     defaults:
       run:
         shell: bash
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.commit }}
 
