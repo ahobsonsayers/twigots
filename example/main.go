@@ -43,7 +43,9 @@ func main() {
 		listings,
 		filter.EventName("Hamilton", filter.DefaultEventNameSimilarity),
 	)
-	for _, listing := range hamiltonListings {
+	for idx := 0; idx < len(hamiltonListings); idx++ {
+		listing := listings[idx]
+
 		slog.Info(
 			"Found Hamilton ticket listing",
 			"Event", listing.Event.Name,
@@ -65,7 +67,8 @@ func main() {
 		filter.NumTickets(2),    // Exactly 2 tickets in the listing
 		filter.MinDiscount(0.1), // Discount of > 10%
 	)
-	for _, listing := range coldplayListings {
+	for idx := 0; idx < len(coldplayListings); idx++ {
+		listing := coldplayListings[idx]
 		slog.Info(
 			"Found Coldplay ticket listing",
 			"Event", listing.Event.Name,
