@@ -59,7 +59,10 @@ func TestFetchListingsReal(t *testing.T) {
 	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
 	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
 
-	twicketsClient, err := twigots.NewClient(twicketsAPIKey)
+	twicketsClient, err := twigots.NewClient(
+		twicketsAPIKey,
+		twigots.WithFlareSolverr("http://0.0.0.0:8191"),
+	)
 	require.NoError(t, err)
 
 	// Fetch ticket listings
