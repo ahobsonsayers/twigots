@@ -75,7 +75,7 @@ func transformToFlareSolverrRequest(request *req.Request, flareSolverrUrl string
 
 	parsedFlareSolverrUrl, err := url.Parse(flareSolverrUrl)
 	if err != nil {
-		return fmt.Errorf("failed to parse flaresolverr url")
+		return fmt.Errorf("failed to parse flaresolverr url: %w", err)
 	}
 
 	twicketsRawUrl := request.RawURL
@@ -127,18 +127,18 @@ func ValidateURL(urlString string) error {
 		return errors.New("url is not set ")
 	}
 
-	url, err := url.Parse(urlString)
+	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		return fmt.Errorf("url format invalid: %w", err)
 	}
 
-	if url.Host == "" {
-		return fmt.Errorf("url hostname missing ")
+	if parsedURL.Host == "" {
+		return errors.New("url hostname missing ")
 	}
 
-	scheme := strings.ToLower(url.Scheme)
+	scheme := strings.ToLower(parsedURL.Scheme)
 	if scheme != "http" && scheme == "https" {
-		return fmt.Errorf("url scheme unsupported: %v", url.Scheme)
+		return fmt.Errorf("url scheme unsupported: %v", parsedURL.Scheme)
 	}
 
 	return nil
