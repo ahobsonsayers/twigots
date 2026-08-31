@@ -105,7 +105,7 @@ func (w *URLWatcher) watch(ctx context.Context, keys *Keys) {
 }
 
 func (w *URLWatcher) fetch(ctx context.Context, keys *Keys) error {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, w.url, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, w.url, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
