@@ -245,10 +245,9 @@ func getMockUrlAndResponder(
 	interval time.Duration, //nolint:unparam
 ) (string, httpmock.Responder) {
 	url := fmt.Sprintf(
-		"https://www.twickets.live/services/catalogue?count=10&maxTime=%d&q=countryCode=%s&api_key=%s",
-		startTime.UnixMilli(),
+		"https://www.twickets.live/services/g2/catalogue?countryCode=%s&limit=10&maxTime=%d",
 		twigots.CountryUnitedKingdom.Value,
-		testAPIKey,
+		startTime.UnixMilli(),
 	)
 	response := getMockResponse(events, startTime, interval)
 
