@@ -4,17 +4,27 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/ahobsonsayers/twigots"
 	"github.com/ahobsonsayers/twigots/filter"
+	"github.com/ahobsonsayers/twigots/keys"
 )
 
 func main() {
-	apiKey := "my_api_key"
+	keysURL := os.Getenv("TWICKETS_KEYS_URL")
+	if keysURL == "" {
+		log.Fatal("TWICKETS_KEYS_URL is not set")
+	}
 
-	// Create twickets client (using api key)
-	client, err := twigots.NewClient(apiKey)
+	twicketsKeys, err := keys.LoadKeysFromURL(keysURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create twickets client
+	client, err := twigots.NewClient(twicketsKeys)
 	if err != nil {
 		log.Fatal(err)
 	}
