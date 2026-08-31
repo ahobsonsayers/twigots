@@ -1,6 +1,9 @@
 # Docs: https://taskfile.dev/#/usage
 version: "3"
 
+dotenv:
+  - .env
+
 tasks:
   format:
     cmds:
@@ -19,6 +22,6 @@ tasks:
       - go clean -testcache
       - task: test
 
-  run:services:
+  run:example:
     cmds:
-      - docker compose up -d
+      - go run ./example
