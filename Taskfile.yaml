@@ -18,7 +18,3 @@ tasks:
     cmds:
       - go clean -testcache
       - task: test
-
-  run:services:
-    cmds:
-      - docker compose up -d
