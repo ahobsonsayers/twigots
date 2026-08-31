@@ -1,4 +1,4 @@
-package twigots
+package flaresolverr
 
 import (
 	"errors"
@@ -13,7 +13,9 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-func WithFlareSolverr(flareSolverrUrl string) ClientOpt {
+type FlareSolverrOpt func(*req.Client) error
+
+func WithFlareSolverr(flareSolverrUrl string) FlareSolverrOpt {
 	return func(client *req.Client) error {
 		err := ValidateURL(flareSolverrUrl)
 		if err != nil {
@@ -91,7 +93,7 @@ func transformToFlareSolverrRequest(request *req.Request, flareSolverrUrl string
 			"maxTimeout": "5000",
 		})
 
-	return nil // return nil if it is success
+	return nil
 }
 
 // transformFromFlareSolverrResponse transforms a flaresolverr response to a standard response.
@@ -118,13 +120,13 @@ func transformFromFlareSolverrResponse(response *req.Response) error {
 
 	response.Body = io.NopCloser(strings.NewReader(bodyJson))
 
-	return nil // return nil if it is success
+	return nil
 }
 
 // ValidateURL checks if a url string  is a valid.
 func ValidateURL(urlString string) error {
 	if urlString == "" {
-		return errors.New("url is not set ")
+		return errors.New("url is not set")
 	}
 
 	parsedURL, err := url.Parse(urlString)
@@ -133,11 +135,11 @@ func ValidateURL(urlString string) error {
 	}
 
 	if parsedURL.Host == "" {
-		return errors.New("url hostname missing ")
+		return errors.New("url hostname missing")
 	}
 
 	scheme := strings.ToLower(parsedURL.Scheme)
-	if scheme != "http" && scheme == "https" {
+	if scheme != "http" && scheme != "https" {
 		return fmt.Errorf("url scheme unsupported: %v", parsedURL.Scheme)
 	}
 
