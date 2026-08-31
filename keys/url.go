@@ -128,11 +128,11 @@ func (w *URLWatcher) fetch(ctx context.Context, keys *Keys) error {
 	return keys.UpdateFromJSON(keysJson)
 }
 
-func LoadKeysFromURL(ctx context.Context, url string, watcherOpts ...URLWatcherOpt) (*Keys, error) {
+func LoadKeysFromURL(url string, watcherOpts ...URLWatcherOpt) (*Keys, error) {
 	watcher := NewURLWatcher(url, watcherOpts...)
 
 	keys := &Keys{}
-	err := watcher.fetch(ctx, keys)
+	err := watcher.fetch(watcher.ctx, keys)
 	if err != nil {
 		return nil, err
 	}
