@@ -1,23 +1,38 @@
 ![twigots](assets/twigots.png)
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ahobsonsayers/twigots.svg)](https://pkg.go.dev/github.com/ahobsonsayers/twigots)
-[![Go Report
-Card](https://goreportcard.com/badge/github.com/ahobsonsayers/twigots)](https://goreportcard.com/report/github.com/ahobsonsayers/twigots)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ahobsonsayers/twigots)](https://goreportcard.com/report/github.com/ahobsonsayers/twigots)
 [![License - MIT](https://img.shields.io/badge/License-MIT-9C27B0)](LICENSE)
+[![Artisan README - Not LLM](https://img.shields.io/static/v1?label=Artisan+README&message=Not+LLM&labelColor=37474F&color=D97757)](#arnl---artisan-readme-not-llm)
 
-A go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
+> [!NOTE]
+> We're back! 💪
+>
+> After Twickets introduced measures to prevent unofficial access to their data - this project was broken for quite a while.
+>
+> After a significant amount of time and effort tinkering and hitting my head against a wall (more than I care to admit) I have now found a way to bring this project back to life and get it working again!
+>
+> Enjoy! 🎟️
+
+A Go package to fetch ticket listings from the [Twickets](https://www.twickets.live) Live Feed.
 
 Includes utilities to help filter the ticket listings and find the ones you want!
 
 Powers (the similarly creatively named)
 [twitchets](https://github.com/ahobsonsayers/twitchets), a tool to watch for event ticket listings on Twickets and notify you so you can snap them up! 🫰
 
+This package utilises the API used by the Twickets Android app, built via decompiling and reverse engineering its code.
+
+To use this API (and therefore this package), you will need to obtain API keys. See the [Getting Keys](#getting-keys) section
+
 - [Installation](#installation)
-- [Getting an API Key](#getting-an-api-key)
+- [Getting Keys](#getting-keys)
+	- [Loading Keys](#loading-keys)
 - [Example Usage](#example-usage)
 - [How does the event name matching/similarity work?](#how-does-the-event-name-matchingsimilarity-work)
 	- [Normalization](#normalization)
 - [Why the name twigots?](#why-the-name-twigots)
+- [AR;NL - Artisan Readme; Not LLM](#arnl---artisan-readme-not-llm)
 
 ## Installation
 
@@ -25,19 +40,50 @@ Powers (the similarly creatively named)
 go get -u github.com/ahobsonsayers/twigots
 ```
 
-## Getting an API Key
+## Getting Keys
 
-To use this tool, you will need a Twickets API key. Although Twickets doesn't provide a free API, you can easily obtain a key by following these steps:
+This package uses the API used by the Android app. To use this API, three keys are required (as well as a valid `User-Agent`):
 
-1.  Visit the [Twickets Live Feed](https://www.twickets.live/app/catalog/browse)
-2.  Open your browser's Developer Tools (F12) and navigate to the Network tab
-3.  Look for the GET request to `https://www.twickets.live/services/catalogue` and copy the `api_key` query parameter. You might need to refresh the page first if nothing appears in this tab.
+- `api_key`
+- `x-prosopo-site-key`
+- `x-prosopo-android-integrity-token`
 
-This API key is not provided here due to liability concerns, but it appears to be a fixed, unchanging value.
+These must be supplied to the package via a `keys.json` file that looks like:
+
+```json
+{
+  "api_key": "your_api_key",
+  "User-Agent": "your_user_agent",
+  "x-prosopo-site-key": "your_site_key",
+  "x-prosopo-android-integrity-token": "your_integrity_token"
+}
+```
+
+The first two keys are static, but the third is rotated and can only be obtained from a real (or emulated) Android device, on a scheduled basis.
+
+Thankfully I built the [`twickets-key-extractor`](https://github.com/ahobsonsayers/twickets-key-extractor) project to do exactly this with an emulator, and regularly extract these keys.
+
+You can run this yourself, but I have also set up a [community-extracted keys.json here](https://gist.githubusercontent.com/ahobsonsayers/773acb763aafc8a39ac260e12a9b39d5/raw/bc9a19d81a033b89e1368a54ce9c4afd09e757ae/keys.json)
+
+### Loading Keys
+
+Once you have a valid source for the `keys.json` you can load them for use in this package in two ways, both of which allow hot reloading
+
+Load keys from a URL:
+
+```go
+keys, err := keys.LoadKeysFromURL("https://example.com/keys.json")
+```
+
+Load keys from a file:
+
+```go
+keys, err := keys.LoadKeysFromFile("/path/to/keys.json")
+```
 
 ## Example Usage
 
-> [!Warning]
+> [!WARNING]
 > Although this package is functional and ready for use, it is still a work in progress and is subject to change without notice - the API and usage may be modified at any time.
 >
 > Use with caution and check for updates regularly.
@@ -51,17 +97,27 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/ahobsonsayers/twigots"
 	"github.com/ahobsonsayers/twigots/filter"
+	"github.com/ahobsonsayers/twigots/keys"
 )
 
 func main() {
-	apiKey := "my_api_key"
+	keysURL := os.Getenv("TWICKETS_KEYS_URL")
+	if keysURL == "" {
+		log.Fatal("TWICKETS_KEYS_URL is not set")
+	}
 
-	// Create twickets client (using api key)
-	client, err := twigots.NewClient(apiKey)
+	twicketsKeys, err := keys.LoadKeysFromURL(keysURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create twickets client
+	client, err := twigots.NewClient(twicketsKeys)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -131,7 +187,7 @@ Event name similarity is calculated using a modified [Smith-Waterman-Gotoh algor
 
 If the desired event name appears within the actual event name returned by twickets (as a substring), the event similarity will be 1. Equally, if the desired event name does not appear at all, the similarity will be 0.
 
-Setting a required similarity below, but close to 1, will allow for small inconsistencies due to misspelling etc., but can return false positives. We recommend (and default to) a value of `0.9`.
+Setting a required similarity below, but close to 1, will allow for small inconsistencies due to misspellings etc., but can return false positives. We recommend (and default to) a value of `0.9`.
 
 False positives can also occur if your desired event name appears in the actual event name, but the event is not the one you want. This can often happen with things like tribute bands - see the example below.
 
@@ -148,10 +204,10 @@ Similarity score: 1
 ```
 Desired event: Taylor Swift
 Actual event: Miss Americana: A Tribute to Taylor Swift
-Similarity score: 1 <- This is a exact match, but it is probably not the event we want
+Similarity score: 1 <- This is an exact match, but it is probably not the event we want
 ```
 
-For a more in depth explanation of the string matching algorithm, [see this PR](https://github.com/ahobsonsayers/twigots/pull/2).
+For a more in-depth explanation of the string matching algorithm, [see this PR](https://github.com/ahobsonsayers/twigots/pull/2).
 
 ### Normalization
 
@@ -169,6 +225,18 @@ This is done by:
 
 ## Why the name twigots?
 
-Because its a stupid mash up of Tickets and Go... and also why not?
+Because it's a stupid mash up of Tickets and Go... and also why not?
 
 [![Hits](https://hits.sh/github.com/ahobsonsayers/twigots.svg?view=today-total&label=Visitors%20Day%20%2F%20Total)](https://hits.sh/github.com/ahobsonsayers/twigots/)
+
+## AR;NL - Artisan Readme; Not LLM
+
+In the age of LLMs and coding agents, code is now cheap - for better or for worse. Your time however, is not ⌛
+
+Therefore this project, like most of my projects, uses a hand written "artisan" README to ensure it is clear, correct and concise. This makes it easy to read and in my opinion encourages reading and engagement - no one likes AI slop!
+
+As someone wiser than me once told a colleague:
+
+"if you can't be bothered to take the time to write these words, then why should I be bothered to read them"
+
+Enjoy!

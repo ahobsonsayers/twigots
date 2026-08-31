@@ -8,13 +8,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ahobsonsayers/twigots/keys"
 	"github.com/imroc/req/v3"
 	"github.com/k3a/html2text"
 )
 
 type Client struct {
 	client *req.Client
-	apiKey string
+	keys   *keys.Keys
 }
 
 func (c *Client) Client() *http.Client {
@@ -85,13 +86,19 @@ func (f FetchTicketListingsInput) Validate() error {
 }
 
 // FetchTicketListings gets ticket listings using the specified feel url.
-func (c *Client) FetchTicketListingsByFeedUrl(
-	ctx context.Context,
-	feedUrl string,
-) (TicketListings, error) {
-	response, err := c.client.R().SetContext(ctx).Get(feedUrl)
+func (c *Client) FetchTicketListingsByFeedUrl(ctx context.Context, feedUrl string) (TicketListings, error) {
+	request := c.client.R().SetContext(ctx)
+
+	request.SetHeaders(map[string]string{
+		"User-Agent":                        c.keys.UserAgent(),
+		"x-prosopo-site-key":                c.keys.ProsopoSiteKey(),
+		"x-prosopo-android-integrity-token": c.keys.ProsopoIntegrityToken(),
+	})
+	request.SetQueryParam("api_key", c.keys.APIKey())
+
+	response, err := request.Get(feedUrl)
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("failed to get tickets: %w", err)
 	}
 
 	if !response.IsSuccessState() {
@@ -104,7 +111,7 @@ func (c *Client) FetchTicketListingsByFeedUrl(
 
 	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed ready response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	return UnmarshalTwicketsFeedJson(bodyBytes)
@@ -130,7 +137,6 @@ func (c *Client) FetchTicketListings(
 
 		// Get feed url
 		feedUrl, err := FeedUrl(FeedUrlInput{
-			APIKey:     c.apiKey,
 			Country:    input.Country,
 			Regions:    input.Regions,
 			BeforeTime: earliestTicketTime,
@@ -196,25 +202,16 @@ func processFeedListings(
 	return processedListings, false
 }
 
-type ClientOpt func(*req.Client) error
-
 // NewClient creates a new Twickets client
-func NewClient(apiKey string, opts ...ClientOpt) (*Client, error) {
-	if apiKey == "" {
-		return nil, errors.New("api key must be set")
+func NewClient(twicketsKeys *keys.Keys) (*Client, error) {
+	if twicketsKeys == nil {
+		return nil, errors.New("keys must be set")
 	}
 
 	client := req.C()
-	client = client.ImpersonateChrome()
-	for _, opt := range opts {
-		err := opt(client)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	return &Client{
 		client: client,
-		apiKey: apiKey,
+		keys:   twicketsKeys,
 	}, nil
 }

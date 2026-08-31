@@ -11,6 +11,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/ahobsonsayers/utilopia v0.2.1
 	github.com/davecgh/go-spew v1.1.1
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/hbollon/go-edlib v1.6.0
 	github.com/imroc/req/v3 v3.54.0
 	github.com/jarcoal/httpmock v1.4.0
@@ -83,7 +84,6 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.6 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v0.3.17 // indirect
 	github.com/go-critic/go-critic v0.14.2 // indirect

@@ -39,7 +39,6 @@ func ListingURL(listingId string, numTickets int) string {
 
 type FeedUrlInput struct {
 	// Required fields
-	APIKey  string
 	Country Country
 
 	// Optional fields
@@ -50,9 +49,6 @@ type FeedUrlInput struct {
 // Validate the input struct used to get the feed url.
 // This is used internally to check the input, but can also be used externally.
 func (f FeedUrlInput) Validate() error {
-	if f.APIKey == "" {
-		return errors.New("api key must be set")
-	}
 	if f.Country.Value == "" {
 		return errors.New("country must be set")
 	}
@@ -67,7 +63,9 @@ func (f FeedUrlInput) Validate() error {
 // There may be any number of additional delisted ticket listings.
 //
 // Format is:
-// https://www.twickets.live/services/catalogue?q=countryCode=GB&count=10&api_key=<api_key>
+// https://www.twickets.live/services/catalogue?q=countryCode=GB&count=10&maxTime=<epoch_ms>
+//
+// Note: The `api_key` query param will be added to the url by the client on request.
 func FeedUrl(input FeedUrlInput) (string, error) {
 	err := input.Validate()
 	if err != nil {
@@ -81,16 +79,13 @@ func FeedUrl(input FeedUrlInput) (string, error) {
 	queryParams := feedUrl.Query()
 
 	locationQuery := apiLocationQuery(input.Country, input.Regions...)
-	if locationQuery != "" {
-		queryParams.Set("q", locationQuery)
-	}
+	queryParams.Set("q", locationQuery)
 
 	if !input.BeforeTime.IsZero() {
 		maxTime := input.BeforeTime.UnixMilli()
 		queryParams.Set("maxTime", strconv.Itoa(int(maxTime)))
 	}
 
-	queryParams.Set("api_key", input.APIKey)
 	queryParams.Set("count", "10") // count must always be 10 to not get an error
 
 	// Set query

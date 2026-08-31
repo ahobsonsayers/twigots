@@ -1,6 +1,9 @@
 # Docs: https://taskfile.dev/#/usage
 version: "3"
 
+dotenv:
+  - .env
+
 tasks:
   format:
     cmds:
@@ -18,3 +21,7 @@ tasks:
     cmds:
       - go clean -testcache
       - task: test
+
+  run:example:
+    cmds:
+      - go run ./example

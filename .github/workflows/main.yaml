@@ -52,5 +52,5 @@ jobs:
       - name: Run test
         run: go test ./...
         env:
-          TWICKETS_API_KEY: ${{ secrets.TWICKETS_API_KEY }}
+          TWICKETS_KEYS_URL: ${{ secrets.TWICKETS_KEYS_URL }}
           CI: true
