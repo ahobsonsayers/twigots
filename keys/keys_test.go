@@ -30,7 +30,7 @@ func TestLoadKeysFromURL(t *testing.T) {
 	}))
 	defer server.Close()
 
-	k, err := keys.LoadKeysFromURL(context.Background(), nil, server.URL)
+	k, err := keys.LoadKeysFromURL(context.Background(), server.URL)
 	require.NoError(t, err)
 
 	require.Equal(t, "test-api-key", k.APIKey())
@@ -104,7 +104,7 @@ func TestWatchURL(t *testing.T) {
 	}))
 	defer server.Close()
 
-	k, err := keys.LoadKeysFromURL(context.Background(), nil, server.URL, keys.WithURLPollInterval(50*time.Millisecond))
+	k, err := keys.LoadKeysFromURL(context.Background(), server.URL, keys.WithURLWatcherPollInterval(50*time.Millisecond))
 	require.NoError(t, err)
 
 	err = k.StartWatching()
