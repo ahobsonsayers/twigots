@@ -63,7 +63,7 @@ The first two keys are static, but the third is rotated and can only be obtained
 
 Thankfully I built the [`twickets-key-extractor`](https://github.com/ahobsonsayers/twickets-key-extractor) project to do exactly this with an emulator, and regularly extract these keys.
 
-You can run this yourself, but I have also set up a [community-extracted keys.json here](https://gist.githubusercontent.com/ahobsonsayers/773acb763aafc8a39ac260e12a9b39d5/raw/bc9a19d81a033b89e1368a54ce9c4afd09e757ae/keys.json)
+You can run this yourself, but I have also set up a [public, regularly extracted keys.json here](https://gist.githubusercontent.com/ahobsonsayers/773acb763aafc8a39ac260e12a9b39d5/raw/keys.json)
 
 ### Loading Keys
 
