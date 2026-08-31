@@ -3,6 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/ahobsonsayers/twigots.svg)](https://pkg.go.dev/github.com/ahobsonsayers/twigots)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ahobsonsayers/twigots)](https://goreportcard.com/report/github.com/ahobsonsayers/twigots)
 [![License - MIT](https://img.shields.io/badge/License-MIT-9C27B0)](LICENSE)
+[![Artisan README - Not LLM](https://img.shields.io/static/v1?label=Artisan+README&message=Not+LLM&labelColor=37474F&color=D97757)](#arnl---artisan-readme-not-llm)
 
 > [!NOTE]
 > We're back! 💪
@@ -31,6 +32,7 @@ To use this API (and therefore this package), you will need to obtain API keys. 
 - [How does the event name matching/similarity work?](#how-does-the-event-name-matchingsimilarity-work)
 	- [Normalization](#normalization)
 - [Why the name twigots?](#why-the-name-twigots)
+- [AR;NL - Artisan Readme; Not LLM](#arnl---artisan-readme-not-llm)
 
 ## Installation
 
@@ -226,3 +228,15 @@ This is done by:
 Because it's a stupid mash up of Tickets and Go... and also why not?
 
 [![Hits](https://hits.sh/github.com/ahobsonsayers/twigots.svg?view=today-total&label=Visitors%20Day%20%2F%20Total)](https://hits.sh/github.com/ahobsonsayers/twigots/)
+
+## AR;NL - Artisan Readme; Not LLM
+
+In the age of LLMs and coding agents, code is now cheap - for better or for worse. Your time however, is not ⌛
+
+Therefore this project, like most of my projects, uses a hand written "artisan" README to ensure it is clear, correct and concise. This makes it easy to read and in my opinion encourages reading and engagement - no one likes AI slop!
+
+As someone wiser than me once told a colleague:
+
+"if you can't be bothered to take the time to write these words, then why should I be bothered to read them"
+
+Enjoy!
