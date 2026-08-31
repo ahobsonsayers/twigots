@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/ahobsonsayers/twigots"
+	"github.com/ahobsonsayers/twigots/keys"
 	"github.com/ahobsonsayers/utilopia/testutils"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jarcoal/httpmock"
@@ -20,7 +21,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testAPIKey = "test"
+const (
+	testAPIKey         = "test"
+	testUserAgent      = "test-user-agent"
+	testProsopoSiteKey = "test-site-key"
+	testProsopoToken   = "test-integrity-token"
+)
+
+func testKeys() *keys.Keys {
+	k := &keys.Keys{}
+	k.Update(
+		ptrString(testAPIKey),
+		ptrString(testUserAgent),
+		ptrString(testProsopoSiteKey),
+		ptrString(testProsopoToken),
+	)
+	return k
+}
+
+func ptrString(s string) *string { return &s }
 
 var testEvents = []string{
 	"Adele",
@@ -56,13 +75,13 @@ func TestFetchListingsReal(t *testing.T) {
 	projectDirectory := testutils.ProjectDirectory(t)
 	_ = godotenv.Load(filepath.Join(projectDirectory, ".env"))
 
-	twicketsAPIKey := os.Getenv("TWICKETS_API_KEY")
-	require.NotEmpty(t, twicketsAPIKey, "TWICKETS_API_KEY is not set")
+	twicketsKeysURL := os.Getenv("TWICKETS_KEYS_URL")
+	require.NotEmpty(t, twicketsKeysURL, "TWICKETS_KEYS_URL is not set")
 
-	twicketsClient, err := twigots.NewClient(
-		twicketsAPIKey,
-		twigots.WithFlareSolverr("http://0.0.0.0:8191"),
-	)
+	twicketsKeys, err := keys.LoadKeysFromURL(twicketsKeysURL)
+	require.NoError(t, err)
+
+	twicketsClient, err := twigots.NewClient(twicketsKeys)
 	require.NoError(t, err)
 
 	// Fetch ticket listings
@@ -83,7 +102,7 @@ func TestFetchListings(t *testing.T) {
 	testTime := time.Now().Truncate(time.Millisecond)
 
 	// Create client
-	twicketsClient, err := twigots.NewClient(testAPIKey)
+	twicketsClient, err := twigots.NewClient(testKeys())
 	require.NoError(t, err)
 
 	// Setup mock
@@ -112,7 +131,7 @@ func TestFetchListingsPaginatedMaxNumber(t *testing.T) {
 	testTime := time.Now().Truncate(time.Millisecond)
 
 	// Create client
-	twicketsClient, err := twigots.NewClient(testAPIKey)
+	twicketsClient, err := twigots.NewClient(testKeys())
 	require.NoError(t, err)
 
 	// Setup mock
@@ -154,7 +173,7 @@ func TestFetchListingsPaginatedCreatedAfter(t *testing.T) {
 	testTime := time.Now().Truncate(time.Millisecond)
 
 	// Create client
-	twicketsClient, err := twigots.NewClient(testAPIKey)
+	twicketsClient, err := twigots.NewClient(testKeys())
 	require.NoError(t, err)
 
 	// Setup mock
@@ -193,7 +212,7 @@ func TestFetchListingsCreatedAfterLatestListingReturnsNothing(t *testing.T) {
 	testTime := time.Now().Truncate(time.Millisecond)
 
 	// Create client
-	twicketsClient, err := twigots.NewClient(testAPIKey)
+	twicketsClient, err := twigots.NewClient(testKeys())
 	require.NoError(t, err)
 
 	// Setup mock
@@ -226,10 +245,10 @@ func getMockUrlAndResponder(
 	interval time.Duration, //nolint:unparam
 ) (string, httpmock.Responder) {
 	url := fmt.Sprintf(
-		"https://www.twickets.live/services/catalogue?api_key=%s&count=10&maxTime=%d&q=countryCode=%s",
-		testAPIKey,
+		"https://www.twickets.live/services/catalogue?count=10&maxTime=%d&q=countryCode=%s&api_key=%s",
 		startTime.UnixMilli(),
 		twigots.CountryUnitedKingdom.Value,
+		testAPIKey,
 	)
 	response := getMockResponse(events, startTime, interval)
 
