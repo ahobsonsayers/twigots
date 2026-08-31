@@ -10,7 +10,12 @@ import (
 	"time"
 )
 
-const TwicketsURL = "https://www.twickets.live"
+const (
+	TwicketsURL = "https://www.twickets.live"
+
+	countryQueryKey = "countryCode"
+	regionQueryKey  = "regionCode"
+)
 
 var twicketsUrl *url.URL
 
@@ -58,7 +63,9 @@ func (f FeedUrlInput) Validate() error {
 // There may be any number of additional delisted ticket listings.
 //
 // Format is:
-// https://www.twickets.live/services/g2/catalogue?countryCode=GB&limit=10
+// https://www.twickets.live/services/catalogue?q=countryCode=GB&count=10&maxTime=<epoch_ms>
+//
+// Note: The `api_key` query param will be added to the url by the client on request.
 func FeedUrl(input FeedUrlInput) (string, error) {
 	err := input.Validate()
 	if err != nil {
@@ -66,33 +73,49 @@ func FeedUrl(input FeedUrlInput) (string, error) {
 	}
 
 	feedUrl := cloneURL(twicketsUrl)
-	feedUrl = feedUrl.JoinPath("services", "g2", "catalogue")
+	feedUrl = feedUrl.JoinPath("services", "catalogue")
 
 	// Set query params
 	queryParams := feedUrl.Query()
 
-	queryParams.Set("countryCode", string(input.Country.Value))
-
-	regionCodes := make([]string, 0, len(input.Regions))
-	for _, region := range input.Regions {
-		if Regions.Contains(region) {
-			regionCodes = append(regionCodes, string(region.Value))
-		}
-	}
-	if len(regionCodes) > 0 {
-		queryParams.Set("regionCodes", strings.Join(regionCodes, ","))
-	}
+	locationQuery := apiLocationQuery(input.Country, input.Regions...)
+	queryParams.Set("q", locationQuery)
 
 	if !input.BeforeTime.IsZero() {
 		maxTime := input.BeforeTime.UnixMilli()
 		queryParams.Set("maxTime", strconv.Itoa(int(maxTime)))
 	}
 
-	queryParams.Set("limit", "10") // limit must always be 10 to not get an error
+	queryParams.Set("count", "10") // count must always be 10 to not get an error
 
-	feedUrl.RawQuery = queryParams.Encode()
+	// Set query
+	encodedQuery := queryParams.Encode()
+	encodedQuery = strings.ReplaceAll(encodedQuery, "%3D", "=")
+	encodedQuery = strings.ReplaceAll(encodedQuery, "%2C", ",")
+	feedUrl.RawQuery = encodedQuery
 
 	return feedUrl.String(), nil
+}
+
+// apiLocationQuery converts a country and selection of regions to an api query string
+func apiLocationQuery(country Country, regions ...Region) string {
+	if !Countries.Contains(country) {
+		return ""
+	}
+
+	queryParts := make([]string, 0, len(regions)+1)
+
+	countryQuery := fmt.Sprintf("%s=%s", countryQueryKey, country.Value)
+	queryParts = append(queryParts, countryQuery)
+
+	for _, region := range regions {
+		if Regions.Contains(region) {
+			regionQuery := fmt.Sprintf("%s=%s", regionQueryKey, region.Value)
+			queryParts = append(queryParts, regionQuery)
+		}
+	}
+
+	return strings.Join(queryParts, ",")
 }
 
 // cloneUrl clones a url. Copied directly from net/http internals

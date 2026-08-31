@@ -90,15 +90,15 @@ func (c *Client) FetchTicketListingsByFeedUrl(ctx context.Context, feedUrl strin
 	request := c.client.R().SetContext(ctx)
 
 	request.SetHeaders(map[string]string{
-		"api_key":                           c.keys.APIKey(),
 		"User-Agent":                        c.keys.UserAgent(),
 		"x-prosopo-site-key":                c.keys.ProsopoSiteKey(),
 		"x-prosopo-android-integrity-token": c.keys.ProsopoIntegrityToken(),
 	})
+	request.SetQueryParam("api_key", c.keys.APIKey())
 
 	response, err := request.Get(feedUrl)
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("failed to get tickets: %w", err)
 	}
 
 	if !response.IsSuccessState() {
@@ -111,7 +111,7 @@ func (c *Client) FetchTicketListingsByFeedUrl(ctx context.Context, feedUrl strin
 
 	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed ready response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	return UnmarshalTwicketsFeedJson(bodyBytes)
@@ -203,8 +203,8 @@ func processFeedListings(
 }
 
 // NewClient creates a new Twickets client
-func NewClient(keys *keys.Keys) (*Client, error) {
-	if keys == nil {
+func NewClient(twicketsKeys *keys.Keys) (*Client, error) {
+	if twicketsKeys == nil {
 		return nil, errors.New("keys must be set")
 	}
 
@@ -212,6 +212,6 @@ func NewClient(keys *keys.Keys) (*Client, error) {
 
 	return &Client{
 		client: client,
-		keys:   keys,
+		keys:   twicketsKeys,
 	}, nil
 }
