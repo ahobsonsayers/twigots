@@ -2,6 +2,7 @@ package keys
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -65,24 +66,23 @@ func (k *Keys) Update(apiKey, userAgent, prosopoSiteKey, prosopoIntegrityToken *
 }
 
 func (k *Keys) UpdateFromJSON(keysJson []byte) error {
-	type keys struct {
+	var keys struct {
 		APIKey                string `json:"api_key"`
 		UserAgent             string `json:"User-Agent"`
 		ProsopoSiteKey        string `json:"x-prosopo-site-key"`
 		ProsopoIntegrityToken string `json:"x-prosopo-android-integrity-token"`
 	}
 
-	var unmarshaledKeys keys
-	err := json.Unmarshal(keysJson, &unmarshaledKeys)
+	err := json.Unmarshal(keysJson, &keys)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal keys: %w", err)
 	}
 
 	k.Update(
-		&unmarshaledKeys.APIKey,
-		&unmarshaledKeys.UserAgent,
-		&unmarshaledKeys.ProsopoSiteKey,
-		&unmarshaledKeys.ProsopoIntegrityToken,
+		&keys.APIKey,
+		&keys.UserAgent,
+		&keys.ProsopoSiteKey,
+		&keys.ProsopoIntegrityToken,
 	)
 
 	return nil
@@ -98,7 +98,7 @@ func (k *Keys) SetWatcher(watcher Watcher) {
 
 func (k *Keys) StartWatching() error {
 	if k.watcher == nil {
-		return fmt.Errorf("no watcher configured")
+		return errors.New("no watcher configured")
 	}
 
 	return k.watcher.StartWatching(k)
