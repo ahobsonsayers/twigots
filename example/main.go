@@ -18,7 +18,7 @@ func main() {
 		log.Fatal("TWICKETS_KEYS_URL is not set")
 	}
 
-	twicketsKeys, err := keys.LoadKeysFromURL(keysURL)
+	twicketsKeys, err := keys.FromURL(keysURL)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -78,7 +78,7 @@ func TestFetchListingsReal(t *testing.T) {
 	twicketsKeysURL := os.Getenv("TWICKETS_KEYS_URL")
 	require.NotEmpty(t, twicketsKeysURL, "TWICKETS_KEYS_URL is not set")
 
-	twicketsKeys, err := keys.LoadKeysFromURL(twicketsKeysURL)
+	twicketsKeys, err := keys.FromURL(twicketsKeysURL)
 	require.NoError(t, err)
 
 	twicketsClient, err := twigots.NewClient(twicketsKeys)
