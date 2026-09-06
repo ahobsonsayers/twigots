@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -14,77 +15,88 @@ import (
 
 const fileDebounce = 200 * time.Millisecond
 
-// FileWatcher watches a file for key updates.
-type FileWatcher struct {
+// FileSource uses a file as a key source.
+// Watching the source will watch the file for updates.
+type FileSource struct {
 	path string
 
-	watcher *fsnotify.Watcher
+	source *fsnotify.Watcher
+
+	watching atomic.Bool
 
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 }
 
-type FileWatcherOpt func(*FileWatcher)
+type FileSourceOpt func(*FileSource)
 
-func WithFileWatcherCtx(ctx context.Context) FileWatcherOpt {
-	return func(w *FileWatcher) {
+func WithFileSourceCtx(ctx context.Context) FileSourceOpt {
+	return func(w *FileSource) {
 		w.ctx = ctx
 	}
 }
 
-func NewFileWatcher(path string, opts ...FileWatcherOpt) *FileWatcher {
+func NewFileSource(path string, opts ...FileSourceOpt) *FileSource {
 	// Apply options
-	watcher := &FileWatcher{path: path}
+	source := &FileSource{path: path}
 	for _, opt := range opts {
-		opt(watcher)
+		opt(source)
 	}
 
 	// Set defaults
-	if watcher.ctx == nil {
-		watcher.ctx = context.Background()
+	if source.ctx == nil {
+		source.ctx = context.Background()
 	}
 
-	return watcher
+	return source
 }
 
-func (w *FileWatcher) StartWatching(keys *Keys) error {
-	fsWatcher, err := fsnotify.NewWatcher()
+func (w *FileSource) StartWatching(keys *Keys) error {
+	fsnotifyWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return fmt.Errorf("failed to create file watcher: %w", err)
+		return fmt.Errorf("failed to create file source: %w", err)
 	}
 
 	fileDirectory := filepath.Dir(w.path)
 	fileName := filepath.Base(w.path)
 
-	err = fsWatcher.Add(fileDirectory)
+	err = fsnotifyWatcher.Add(fileDirectory)
 	if err != nil {
-		fsWatcher.Close()
+		fsnotifyWatcher.Close()
 		return fmt.Errorf("failed to watch directory %q: %w", fileDirectory, err)
 	}
 
-	w.watcher = fsWatcher
+	w.source = fsnotifyWatcher
 
 	ctx, cancel := context.WithCancel(w.ctx)
 	w.cancel = cancel
 	w.wg.Add(1)
+
+	w.watching.Store(true)
 
 	go w.watch(ctx, keys, fileName)
 
 	return nil
 }
 
-func (w *FileWatcher) StopWatching() {
+func (w *FileSource) StopWatching() {
 	if w.cancel != nil {
 		w.cancel()
 	}
 	w.wg.Wait()
-	if w.watcher != nil {
-		w.watcher.Close()
+	if w.source != nil {
+		w.source.Close()
 	}
+
+	w.watching.Store(false)
 }
 
-func (w *FileWatcher) watch(ctx context.Context, keys *Keys, targetFileName string) {
+func (w *FileSource) IsWatching() bool {
+	return w.watching.Load()
+}
+
+func (w *FileSource) watch(ctx context.Context, keys *Keys, targetFileName string) {
 	defer w.wg.Done()
 
 	var debounce *time.Timer
@@ -93,7 +105,7 @@ func (w *FileWatcher) watch(ctx context.Context, keys *Keys, targetFileName stri
 		case <-ctx.Done():
 			return
 
-		case event, ok := <-w.watcher.Events:
+		case event, ok := <-w.source.Events:
 			if !ok {
 				return
 			}
@@ -110,7 +122,7 @@ func (w *FileWatcher) watch(ctx context.Context, keys *Keys, targetFileName stri
 			debounce = time.AfterFunc(
 				fileDebounce,
 				func() {
-					err := w.load(keys)
+					err := w.Load(keys)
 					if err != nil {
 						slog.Error(
 							"failed to reload keys",
@@ -121,37 +133,34 @@ func (w *FileWatcher) watch(ctx context.Context, keys *Keys, targetFileName stri
 				},
 			)
 
-		case err, ok := <-w.watcher.Errors:
+		case err, ok := <-w.source.Errors:
 			if !ok {
 				return
 			}
 
 			slog.Error(
-				"keys file watcher error",
+				"keys file source error",
 				"error", err,
 			)
 		}
 	}
 }
 
-func (w *FileWatcher) load(keys *Keys) error {
+func (w *FileSource) Load(keys *Keys) error {
 	keysJson, err := os.ReadFile(w.path)
 	if err != nil {
-		return fmt.Errorf("failed to read keys file: %w", err)
+		return fmt.Errorf("failed to load keys: %w", err)
 	}
 
 	return keys.UpdateFromJSON(keysJson)
 }
 
-func LoadKeysFromFile(path string, watcherOpts ...FileWatcherOpt) (*Keys, error) {
-	watcher := NewFileWatcher(path, watcherOpts...)
-
+func FromFile(path string, sourceOpts ...FileSourceOpt) (*Keys, error) {
 	keys := &Keys{}
-	err := watcher.load(keys)
+	err := keys.SetSource(NewFileSource(path, sourceOpts...))
 	if err != nil {
 		return nil, err
 	}
 
-	keys.SetWatcher(watcher)
 	return keys, nil
 }

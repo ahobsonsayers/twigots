@@ -7,81 +7,96 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 const defaultURLPollInterval = time.Minute
 
-// URLWatcher watches a URL for key updates by polling at a regular interval.
-type URLWatcher struct {
+// URLSource uses a URL as a key source.
+// Watching the source will poll the at a regular interval.
+type URLSource struct {
 	client       *http.Client
 	url          string
 	pollInterval time.Duration
+
+	watching atomic.Bool
 
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 }
 
-type URLWatcherOpt func(*URLWatcher)
+type URLSourceOpt func(*URLSource)
 
-func WithURLWatcherCtx(ctx context.Context) URLWatcherOpt {
-	return func(w *URLWatcher) {
+func WithURLSourceCtx(ctx context.Context) URLSourceOpt {
+	return func(w *URLSource) {
 		w.ctx = ctx
 	}
 }
 
-func WithURLWatcherHTTPClient(client *http.Client) URLWatcherOpt {
-	return func(w *URLWatcher) {
+func WithURLSourceHTTPClient(client *http.Client) URLSourceOpt {
+	return func(w *URLSource) {
 		w.client = client
 	}
 }
 
-func WithURLWatcherPollInterval(d time.Duration) URLWatcherOpt {
-	return func(w *URLWatcher) {
+func WithURLSourcePollInterval(d time.Duration) URLSourceOpt {
+	return func(w *URLSource) {
 		w.pollInterval = d
 	}
 }
 
-func NewURLWatcher(url string, opts ...URLWatcherOpt) *URLWatcher {
+func NewURLSource(url string, opts ...URLSourceOpt) *URLSource {
 	// Apply options
-	watcher := &URLWatcher{url: url}
+	source := &URLSource{url: url}
 	for _, opt := range opts {
-		opt(watcher)
+		opt(source)
 	}
 
 	// Set defaults
-	if watcher.client == nil {
-		watcher.client = http.DefaultClient
+	if source.client == nil {
+		source.client = http.DefaultClient
 	}
-	if watcher.pollInterval <= 0 {
-		watcher.pollInterval = defaultURLPollInterval
+	if source.pollInterval <= 0 {
+		source.pollInterval = defaultURLPollInterval
 	}
-	if watcher.ctx == nil {
-		watcher.ctx = context.Background()
+	if source.ctx == nil {
+		source.ctx = context.Background()
 	}
 
-	return watcher
+	return source
 }
 
-func (w *URLWatcher) StartWatching(keys *Keys) error {
+func (w *URLSource) StartWatching(keys *Keys) error {
 	ctx, cancel := context.WithCancel(w.ctx)
 	w.cancel = cancel
 	w.wg.Add(1)
+
+	w.watching.Store(true)
 
 	go w.watch(ctx, keys)
 
 	return nil
 }
 
-func (w *URLWatcher) StopWatching() {
-	if w.cancel != nil {
-		w.cancel()
-	}
+func (w *URLSource) StopWatching() {
+	w.cancel()
 	w.wg.Wait()
+
+	w.watching.Store(false)
 }
 
-func (w *URLWatcher) watch(ctx context.Context, keys *Keys) {
+func (w *URLSource) IsWatching() bool {
+	return w.watching.Load()
+}
+
+// Load loads the current keys from the URL and updates the keys.
+func (w *URLSource) Load(keys *Keys) error {
+	return w.fetch(w.ctx, keys)
+}
+
+func (w *URLSource) watch(ctx context.Context, keys *Keys) {
 	defer w.wg.Done()
 
 	ticker := time.NewTicker(w.pollInterval)
@@ -96,7 +111,7 @@ func (w *URLWatcher) watch(ctx context.Context, keys *Keys) {
 			err := w.fetch(ctx, keys)
 			if err != nil {
 				slog.Error(
-					"failed to fetch keys",
+					"failed to load keys",
 					"error", err,
 				)
 			}
@@ -104,7 +119,7 @@ func (w *URLWatcher) watch(ctx context.Context, keys *Keys) {
 	}
 }
 
-func (w *URLWatcher) fetch(ctx context.Context, keys *Keys) error {
+func (w *URLSource) fetch(ctx context.Context, keys *Keys) error {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, w.url, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -112,12 +127,12 @@ func (w *URLWatcher) fetch(ctx context.Context, keys *Keys) error {
 
 	response, err := w.client.Do(request)
 	if err != nil {
-		return fmt.Errorf("failed to fetch keys: %w", err)
+		return fmt.Errorf("failed to fetch url: %w", err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status fetching keys: %s", response.Status)
+		return fmt.Errorf("unexpected status fetching url: %s", response.Status)
 	}
 
 	keysJson, err := io.ReadAll(response.Body)
@@ -128,15 +143,12 @@ func (w *URLWatcher) fetch(ctx context.Context, keys *Keys) error {
 	return keys.UpdateFromJSON(keysJson)
 }
 
-func LoadKeysFromURL(url string, watcherOpts ...URLWatcherOpt) (*Keys, error) {
-	watcher := NewURLWatcher(url, watcherOpts...)
-
+func FromURL(url string, sourceOpts ...URLSourceOpt) (*Keys, error) {
 	keys := &Keys{}
-	err := watcher.fetch(watcher.ctx, keys)
+	err := keys.SetSource(NewURLSource(url, sourceOpts...))
 	if err != nil {
 		return nil, err
 	}
 
-	keys.SetWatcher(watcher)
 	return keys, nil
 }

@@ -15,13 +15,16 @@ type Keys struct {
 	prosopoSiteKey        string
 	prosopoIntegrityToken string
 
-	watcher Watcher
+	source Source
 }
 
-// Watcher watches a keys source for updates.
-type Watcher interface {
+// Source is a keys source.
+// Must be able to watch source for updates
+type Source interface {
+	Load(k *Keys) error
 	StartWatching(k *Keys) error
 	StopWatching()
+	IsWatching() bool
 }
 
 func (k *Keys) APIKey() string {
@@ -88,24 +91,61 @@ func (k *Keys) UpdateFromJSON(keysJson []byte) error {
 	return nil
 }
 
-func (k *Keys) HasWatcher() bool {
-	return k.watcher != nil
+func (k *Keys) HasSource() bool {
+	return k.source != nil
 }
 
-func (k *Keys) SetWatcher(watcher Watcher) {
-	k.watcher = watcher
+// Load reloads the keys from the current source.
+func (k *Keys) Load() error {
+	if k.source == nil {
+		return errors.New("no source configured")
+	}
+	return k.source.Load(k)
 }
 
 func (k *Keys) StartWatching() error {
-	if k.watcher == nil {
-		return errors.New("no watcher configured")
+	if k.source == nil {
+		return errors.New("no source configured")
 	}
-
-	return k.watcher.StartWatching(k)
+	return k.source.StartWatching(k)
 }
 
 func (k *Keys) StopWatching() {
-	if k.watcher != nil {
-		k.watcher.StopWatching()
+	if k.source != nil && k.source.IsWatching() {
+		k.source.StopWatching()
 	}
+}
+
+func (k *Keys) IsWatching() bool {
+	if k.source == nil {
+		return false
+	}
+	return k.source.IsWatching()
+}
+
+// SetSource replaces the keys source.
+// Keys are loaded from the new source immediately, and if watch is currently
+// running, the new source will start being watched.
+// If load fails, no changes to keys are made.
+func (k *Keys) SetSource(source Source) error {
+	err := source.Load(k)
+	if err != nil {
+		return fmt.Errorf("failed to load keys from new source: %w", err)
+	}
+
+	wasWatching := k.source != nil && k.source.IsWatching()
+	if wasWatching {
+		k.source.StopWatching()
+	}
+
+	k.source = source
+
+	if wasWatching {
+		err := source.StartWatching(k)
+		if err != nil {
+			return fmt.Errorf("failed to watch new source: %w", err)
+		}
+	}
+
+	return nil
 }
